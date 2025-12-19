@@ -3,44 +3,69 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
 import { getFirebaseAuth } from '@/services/firebase'
+import type { Flyer, Video, WebsitePreview, TeamMember } from '@/types/models'
+import {
+  flyersService,
+  videosService,
+  previewsService,
+  teamService,
+} from '@/services/firestore'
+import { uploadImage, uploadVideo, getThumbnailUrl } from '@/services/cloudinary-upload'
 
 const router = useRouter()
 const auth = getFirebaseAuth()
 
 const user = ref<User | null>(null)
 const isLoading = ref(false)
+const isUploading = ref(false)
 const activeTab = ref<'flyers' | 'videos' | 'previews' | 'team'>('flyers')
+const errorMsg = ref<string | null>(null)
 
-// Mock data
-const flyers = ref([
-  { id: 1, name: 'Affiche 1', url: '/assets/affiche.jpeg', uploadedAt: '2024-01-15' },
-  { id: 2, name: 'Affiche 2', url: '/assets/affiche2.jpeg', uploadedAt: '2024-01-20' },
-  { id: 3, name: 'Affiche 3', url: '/assets/affiche3.jpeg', uploadedAt: '2024-01-25' },
-])
+// Data from Firestore
+const flyers = ref<Flyer[]>([])
+const videos = ref<Video[]>([])
+const previews = ref<WebsitePreview[]>([])
+const teamMembers = ref<TeamMember[]>([])
 
-const videos = ref([
-  { id: 1, name: 'Présentation NELF', url: 'https://example.com/video1.mp4', uploadedAt: '2024-01-10' },
-  { id: 2, name: 'Témoignage Client', url: 'https://example.com/video2.mp4', uploadedAt: '2024-01-18' },
-])
+// Modal states
+const showPreviewModal = ref(false)
+const showTeamModal = ref(false)
+const showDeleteConfirm = ref(false)
+const deleteItemType = ref<'flyers' | 'videos' | 'previews' | 'team' | null>(null)
+const deleteItemId = ref<string | null>(null)
 
-const previews = ref([
-  { id: 1, name: 'Site Web Principal', url: 'https://nelf.com', thumbnail: '/assets/affiche.jpeg', uploadedAt: '2024-01-12' },
-  { id: 2, name: 'Portfolio', url: 'https://portfolio.nelf.com', thumbnail: '/assets/affiche2.jpeg', uploadedAt: '2024-01-22' },
-])
+// Form data
+const previewForm = ref({
+  name: '',
+  url: '',
+  description: '',
+  technologies: '',
+  thumbnailFile: null as File | null,
+})
 
-const teamMembers = ref([
-  { id: 1, name: 'Jean Dupont', role: 'Directeur Créatif', description: 'Expert en design et stratégie créative', avatar: 'JD' },
-  { id: 2, name: 'Marie Martin', role: 'Développeuse Full-Stack', description: 'Spécialisée en Vue.js et Node.js', avatar: 'MM' },
-  { id: 3, name: 'Pierre Bernard', role: 'Chef de Projet', description: 'Gestion de projets et coordination d\'équipe', avatar: 'PB' },
-])
+const teamForm = ref({
+  name: '',
+  role: '',
+  description: '',
+  email: '',
+  phone: '',
+  linkedin: '',
+  github: '',
+  portfolio: '',
+  skills: '',
+  avatarFile: null as File | null,
+})
 
 let unsubscribe: (() => void) | null = null
 
-onMounted(() => {
-  unsubscribe = onAuthStateChanged(auth, (u) => {
+onMounted(async () => {
+  unsubscribe = onAuthStateChanged(auth, async (u) => {
     user.value = u
     if (!u) {
       router.push({ name: 'admin-login' })
+    } else {
+      // Load all data when authenticated
+      await loadAllData()
     }
   })
 })
@@ -50,6 +75,60 @@ onUnmounted(() => {
   unsubscribe = null
 })
 
+async function loadAllData() {
+  isLoading.value = true
+  errorMsg.value = null
+  try {
+    await Promise.all([
+      loadFlyers(),
+      loadVideos(),
+      loadPreviews(),
+      loadTeamMembers(),
+    ])
+  } catch (error) {
+    console.error('Error loading data:', error)
+    errorMsg.value = 'Erreur lors du chargement des données'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function loadFlyers() {
+  try {
+    flyers.value = await flyersService.readAll()
+  } catch (error) {
+    console.error('Error loading flyers:', error)
+    throw error
+  }
+}
+
+async function loadVideos() {
+  try {
+    videos.value = await videosService.readAll()
+  } catch (error) {
+    console.error('Error loading videos:', error)
+    throw error
+  }
+}
+
+async function loadPreviews() {
+  try {
+    previews.value = await previewsService.readAll()
+  } catch (error) {
+    console.error('Error loading previews:', error)
+    throw error
+  }
+}
+
+async function loadTeamMembers() {
+  try {
+    teamMembers.value = await teamService.readAll()
+  } catch (error) {
+    console.error('Error loading team members:', error)
+    throw error
+  }
+}
+
 async function handleLogout() {
   isLoading.value = true
   try {
@@ -57,44 +136,264 @@ async function handleLogout() {
     router.push({ name: 'admin-login' })
   } catch (error) {
     console.error('Logout error:', error)
+    errorMsg.value = 'Erreur lors de la déconnexion'
   } finally {
     isLoading.value = false
   }
 }
 
-function handleFileUpload(type: 'flyers' | 'videos' | 'previews') {
-  // Mock upload - in real implementation, this would upload to Firebase Storage
-  alert(`Upload ${type} - Cette fonctionnalité sera implémentée avec Firebase Storage`)
+// File upload handlers
+async function handleFlyerUpload() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+
+    isUploading.value = true
+    errorMsg.value = null
+
+    try {
+      // Upload to Cloudinary
+      const uploadResult = await uploadImage(file, 'nelf/flyers')
+      const thumbnailUrl = getThumbnailUrl(uploadResult.publicId, 300)
+
+      // Get name from file or prompt
+      const name = file.name.replace(/\.[^/.]+$/, '') || 'Nouvelle affiche'
+
+      // Save to Firestore
+      const flyerData: Omit<Flyer, 'id' | 'createdAt' | 'updatedAt'> = {
+        name,
+        url: uploadResult.secureUrl,
+        thumbnailUrl,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: user.value?.email || user.value?.uid,
+        isActive: true,
+      }
+
+      await flyersService.create(flyerData)
+      await loadFlyers()
+    } catch (error) {
+      console.error('Error uploading flyer:', error)
+      errorMsg.value = 'Erreur lors de l\'upload de l\'affiche'
+    } finally {
+      isUploading.value = false
+    }
+  }
+  input.click()
 }
 
-function handleAddTeamMember() {
-  const name = prompt('Nom du membre:')
-  const role = prompt('Rôle:')
-  const description = prompt('Description:')
-  
-  if (name && role && description) {
-    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase()
-    teamMembers.value.push({
-      id: teamMembers.value.length + 1,
-      name,
-      role,
-      description,
-      avatar: initials,
-    })
+async function handleVideoUpload() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'video/*'
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+
+    isUploading.value = true
+    errorMsg.value = null
+
+    try {
+      // Upload to Cloudinary
+      const uploadResult = await uploadVideo(file, 'nelf/videos')
+      const thumbnailUrl = getThumbnailUrl(uploadResult.publicId, 300)
+
+      // Get name from file or prompt
+      const name = file.name.replace(/\.[^/.]+$/, '') || 'Nouvelle vidéo'
+
+      // Save to Firestore
+      const videoData: Omit<Video, 'id' | 'createdAt' | 'updatedAt'> = {
+        name,
+        url: uploadResult.secureUrl,
+        thumbnailUrl,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: user.value?.email || user.value?.uid,
+        videoType: 'direct',
+        isActive: true,
+      }
+
+      await videosService.create(videoData)
+      await loadVideos()
+    } catch (error) {
+      console.error('Error uploading video:', error)
+      errorMsg.value = 'Erreur lors de l\'upload de la vidéo'
+    } finally {
+      isUploading.value = false
+    }
+  }
+  input.click()
+}
+
+function handlePreviewUpload() {
+  // Reset form
+  previewForm.value = {
+    name: '',
+    url: '',
+    description: '',
+    technologies: '',
+    thumbnailFile: null,
+  }
+  showPreviewModal.value = true
+}
+
+async function handlePreviewSubmit() {
+  if (!previewForm.value.name || !previewForm.value.url || !previewForm.value.thumbnailFile) {
+    errorMsg.value = 'Veuillez remplir tous les champs obligatoires'
+    return
+  }
+
+  isUploading.value = true
+  errorMsg.value = null
+  showPreviewModal.value = false
+
+  try {
+    // Upload thumbnail to Cloudinary
+    const uploadResult = await uploadImage(previewForm.value.thumbnailFile, 'nelf/previews')
+    const thumbnailUrl = uploadResult.secureUrl
+
+    // Parse technologies
+    const technologies = previewForm.value.technologies
+      ? previewForm.value.technologies.split(',').map((t) => t.trim()).filter(Boolean)
+      : undefined
+
+    // Save to Firestore
+    const previewData: Omit<WebsitePreview, 'id' | 'createdAt' | 'updatedAt'> = {
+      name: previewForm.value.name,
+      url: previewForm.value.url,
+      thumbnailUrl,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: user.value?.email || user.value?.uid,
+      description: previewForm.value.description || undefined,
+      technologies,
+      isActive: true,
+    }
+
+    await previewsService.create(previewData)
+    await loadPreviews()
+  } catch (error) {
+    console.error('Error uploading preview:', error)
+    errorMsg.value = 'Erreur lors de l\'upload de l\'aperçu'
+  } finally {
+    isUploading.value = false
   }
 }
 
-function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: number) {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cet élément?')) {
-    if (type === 'flyers') {
-      flyers.value = flyers.value.filter(f => f.id !== id)
-    } else if (type === 'videos') {
-      videos.value = videos.value.filter(v => v.id !== id)
-    } else if (type === 'previews') {
-      previews.value = previews.value.filter(p => p.id !== id)
-    } else if (type === 'team') {
-      teamMembers.value = teamMembers.value.filter(t => t.id !== id)
+function handleAddTeamMember() {
+  // Reset form
+  teamForm.value = {
+    name: '',
+    role: '',
+    description: '',
+    email: '',
+    phone: '',
+    linkedin: '',
+    github: '',
+    portfolio: '',
+    skills: '',
+    avatarFile: null,
+  }
+  showTeamModal.value = true
+}
+
+async function handleTeamSubmit() {
+  if (!teamForm.value.name || !teamForm.value.role || !teamForm.value.description) {
+    errorMsg.value = 'Veuillez remplir tous les champs obligatoires'
+    return
+  }
+
+  isUploading.value = true
+  errorMsg.value = null
+  showTeamModal.value = false
+
+  try {
+    // Upload avatar if provided
+    let avatarUrl: string | undefined
+    if (teamForm.value.avatarFile) {
+      const uploadResult = await uploadImage(teamForm.value.avatarFile, 'nelf/team')
+      avatarUrl = uploadResult.secureUrl
     }
+
+    // Generate initials
+    const initials = teamForm.value.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+
+    // Parse skills
+    const skills = teamForm.value.skills
+      ? teamForm.value.skills.split(',').map((s) => s.trim()).filter(Boolean)
+      : undefined
+
+    // Build social links
+    const socialLinks: TeamMember['socialLinks'] = {}
+    if (teamForm.value.linkedin) socialLinks.linkedin = teamForm.value.linkedin
+    if (teamForm.value.github) socialLinks.github = teamForm.value.github
+    if (teamForm.value.portfolio) socialLinks.portfolio = teamForm.value.portfolio
+
+    const memberData: Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'> = {
+      name: teamForm.value.name,
+      role: teamForm.value.role,
+      description: teamForm.value.description,
+      email: teamForm.value.email || undefined,
+      phone: teamForm.value.phone || undefined,
+      avatar: avatarUrl,
+      avatarInitials: initials,
+      socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
+      skills,
+      isActive: true,
+    }
+
+    await teamService.create(memberData)
+    await loadTeamMembers()
+  } catch (error) {
+    console.error('Error creating team member:', error)
+    errorMsg.value = 'Erreur lors de la création du membre'
+  } finally {
+    isUploading.value = false
+  }
+}
+
+function handleDeleteItem(
+  type: 'flyers' | 'videos' | 'previews' | 'team',
+  id: string,
+) {
+  deleteItemType.value = type
+  deleteItemId.value = id
+  showDeleteConfirm.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteItemType.value || !deleteItemId.value) return
+
+  isLoading.value = true
+  errorMsg.value = null
+  showDeleteConfirm.value = false
+
+  try {
+    if (deleteItemType.value === 'flyers') {
+      await flyersService.delete(deleteItemId.value)
+      await loadFlyers()
+    } else if (deleteItemType.value === 'videos') {
+      await videosService.delete(deleteItemId.value)
+      await loadVideos()
+    } else if (deleteItemType.value === 'previews') {
+      await previewsService.delete(deleteItemId.value)
+      await loadPreviews()
+    } else if (deleteItemType.value === 'team') {
+      await teamService.delete(deleteItemId.value)
+      await loadTeamMembers()
+    }
+  } catch (error) {
+    console.error('Error deleting item:', error)
+    errorMsg.value = 'Erreur lors de la suppression'
+  } finally {
+    isLoading.value = false
+    deleteItemType.value = null
+    deleteItemId.value = null
   }
 }
 </script>
@@ -126,10 +425,25 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
       </div>
     </header>
 
+    <!-- Error Message -->
+    <div v-if="errorMsg" class="max-w-7xl mx-auto px-6 pt-4">
+      <div class="rounded-xl bg-red-500/20 border border-red-500/30 p-4">
+        <p class="text-sm text-red-200 font-medium">{{ errorMsg }}</p>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-6 py-8">
+      <!-- Loading State -->
+      <div v-if="isLoading && flyers.length === 0" class="flex items-center justify-center py-20">
+        <div class="text-white/60">Chargement...</div>
+      </div>
+
       <!-- Tabs -->
-      <div class="mb-8 flex items-center gap-2 p-1 rounded-xl bg-white/5 border border-white/10 w-fit">
+      <div
+        v-else
+        class="mb-8 flex items-center gap-2 p-1 rounded-xl bg-white/5 border border-white/10 w-fit"
+      >
         <button
           :class="[
             'px-6 py-2.5 rounded-lg text-sm font-semibold transition-all',
@@ -179,27 +493,40 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
       <!-- Flyers Tab -->
       <div v-if="activeTab === 'flyers'" class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold text-white">Gestion des Affiches</h2>
+          <h2 class="text-xl font-bold text-white">Gestion des Affiches ({{ flyers.length }})</h2>
           <button
-            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg"
-            @click="handleFileUpload('flyers')"
+            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+            :disabled="isUploading"
+            @click="handleFlyerUpload"
           >
-            + Ajouter une affiche
+            {{ isUploading ? 'Upload en cours...' : '+ Ajouter une affiche' }}
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-if="flyers.length === 0" class="text-center py-12 text-white/60">
+          Aucune affiche pour le moment
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="flyer in flyers"
             :key="flyer.id"
             class="rounded-2xl bg-white/10 border border-white/20 p-4 backdrop-blur-md hover:bg-white/15 transition-all"
           >
             <div class="aspect-[3/4] rounded-xl bg-white/5 mb-4 overflow-hidden">
-              <img :src="flyer.url" :alt="flyer.name" class="w-full h-full object-cover" />
+              <img
+                :src="flyer.thumbnailUrl || flyer.url"
+                :alt="flyer.name"
+                class="w-full h-full object-cover"
+              />
             </div>
             <div class="flex items-center justify-between">
               <div>
                 <h3 class="font-semibold text-white">{{ flyer.name }}</h3>
-                <p class="text-xs text-white/60 mt-1">{{ flyer.uploadedAt }}</p>
+                <p class="text-xs text-white/60 mt-1">
+                  {{ new Date(flyer.uploadedAt).toLocaleDateString('fr-FR') }}
+                </p>
+                <p v-if="flyer.description" class="text-xs text-white/50 mt-1">
+                  {{ flyer.description }}
+                </p>
               </div>
               <button
                 class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 hover:bg-red-500/30 text-sm transition-all"
@@ -215,32 +542,45 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
       <!-- Videos Tab -->
       <div v-if="activeTab === 'videos'" class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold text-white">Gestion des Vidéos</h2>
+          <h2 class="text-xl font-bold text-white">Gestion des Vidéos ({{ videos.length }})</h2>
           <button
-            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg"
-            @click="handleFileUpload('videos')"
+            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+            :disabled="isUploading"
+            @click="handleVideoUpload"
           >
-            + Ajouter une vidéo
+            {{ isUploading ? 'Upload en cours...' : '+ Ajouter une vidéo' }}
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div v-if="videos.length === 0" class="text-center py-12 text-white/60">
+          Aucune vidéo pour le moment
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
             v-for="video in videos"
             :key="video.id"
             class="rounded-2xl bg-white/10 border border-white/20 p-6 backdrop-blur-md hover:bg-white/15 transition-all"
           >
-            <div class="aspect-video rounded-xl bg-white/5 mb-4 flex items-center justify-center">
-              <svg class="w-16 h-16 text-white/40" fill="currentColor" viewBox="0 0 24 24">
+            <div class="aspect-video rounded-xl bg-white/5 mb-4 flex items-center justify-center overflow-hidden">
+              <video
+                v-if="video.thumbnailUrl"
+                :src="video.url"
+                :poster="video.thumbnailUrl"
+                class="w-full h-full object-cover"
+                controls
+              ></video>
+              <svg v-else class="w-16 h-16 text-white/40" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>
             <div class="flex items-center justify-between">
               <div>
                 <h3 class="font-semibold text-white">{{ video.name }}</h3>
-                <p class="text-xs text-white/60 mt-1">{{ video.uploadedAt }}</p>
-                <a :href="video.url" target="_blank" class="text-sm text-[#c62d6a] hover:underline mt-2 block">
-                  {{ video.url }}
-                </a>
+                <p class="text-xs text-white/60 mt-1">
+                  {{ new Date(video.uploadedAt).toLocaleDateString('fr-FR') }}
+                </p>
+                <p v-if="video.description" class="text-sm text-white/70 mt-2">
+                  {{ video.description }}
+                </p>
               </div>
               <button
                 class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 hover:bg-red-500/30 text-sm transition-all"
@@ -256,30 +596,58 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
       <!-- Previews Tab -->
       <div v-if="activeTab === 'previews'" class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold text-white">Gestion des Aperçus Web</h2>
+          <h2 class="text-xl font-bold text-white">
+            Gestion des Aperçus Web ({{ previews.length }})
+          </h2>
           <button
-            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg"
-            @click="handleFileUpload('previews')"
+            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+            :disabled="isUploading"
+            @click="handlePreviewUpload"
           >
-            + Ajouter un aperçu
+            {{ isUploading ? 'Upload en cours...' : '+ Ajouter un aperçu' }}
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div v-if="previews.length === 0" class="text-center py-12 text-white/60">
+          Aucun aperçu web pour le moment
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
             v-for="preview in previews"
             :key="preview.id"
             class="rounded-2xl bg-white/10 border border-white/20 p-6 backdrop-blur-md hover:bg-white/15 transition-all"
           >
             <div class="aspect-video rounded-xl bg-white/5 mb-4 overflow-hidden">
-              <img :src="preview.thumbnail" :alt="preview.name" class="w-full h-full object-cover" />
+              <img
+                :src="preview.thumbnailUrl"
+                :alt="preview.name"
+                class="w-full h-full object-cover"
+              />
             </div>
             <div class="flex items-center justify-between">
               <div>
                 <h3 class="font-semibold text-white">{{ preview.name }}</h3>
-                <p class="text-xs text-white/60 mt-1">{{ preview.uploadedAt }}</p>
-                <a :href="preview.url" target="_blank" class="text-sm text-[#c62d6a] hover:underline mt-2 block">
+                <p class="text-xs text-white/60 mt-1">
+                  {{ new Date(preview.uploadedAt).toLocaleDateString('fr-FR') }}
+                </p>
+                <a
+                  :href="preview.url"
+                  target="_blank"
+                  class="text-sm text-[#c62d6a] hover:underline mt-2 block"
+                >
                   {{ preview.url }}
                 </a>
+                <div
+                  v-if="preview.technologies && preview.technologies.length > 0"
+                  class="flex flex-wrap gap-1 mt-2"
+                >
+                  <span
+                    v-for="tech in preview.technologies"
+                    :key="tech"
+                    class="px-2 py-0.5 rounded text-xs bg-white/10 text-white/80"
+                  >
+                    {{ tech }}
+                  </span>
+                </div>
               </div>
               <button
                 class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 hover:bg-red-500/30 text-sm transition-all"
@@ -295,15 +663,21 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
       <!-- Team Tab -->
       <div v-if="activeTab === 'team'" class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold text-white">Gestion de l'Équipe</h2>
+          <h2 class="text-xl font-bold text-white">
+            Gestion de l'Équipe ({{ teamMembers.length }})
+          </h2>
           <button
-            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg"
+            class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+            :disabled="isUploading"
             @click="handleAddTeamMember"
           >
-            + Ajouter un membre
+            {{ isUploading ? 'Traitement...' : '+ Ajouter un membre' }}
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-if="teamMembers.length === 0" class="text-center py-12 text-white/60">
+          Aucun membre d'équipe pour le moment
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="member in teamMembers"
             :key="member.id"
@@ -311,9 +685,16 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
           >
             <div class="flex items-center gap-4 mb-4">
               <div
+                v-if="member.avatar"
+                class="w-16 h-16 rounded-full bg-gradient-to-br from-[#c62d6a] to-[#4c2e6c] flex items-center justify-center text-white font-bold text-xl overflow-hidden"
+              >
+                <img :src="member.avatar" :alt="member.name" class="w-full h-full object-cover" />
+              </div>
+              <div
+                v-else
                 class="w-16 h-16 rounded-full bg-gradient-to-br from-[#c62d6a] to-[#4c2e6c] flex items-center justify-center text-white font-bold text-xl"
               >
-                {{ member.avatar }}
+                {{ member.avatarInitials || member.name.charAt(0).toUpperCase() }}
               </div>
               <div class="flex-1">
                 <h3 class="font-semibold text-white">{{ member.name }}</h3>
@@ -321,6 +702,18 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
               </div>
             </div>
             <p class="text-sm text-white/80 mb-4">{{ member.description }}</p>
+            <div
+              v-if="member.skills && member.skills.length > 0"
+              class="flex flex-wrap gap-1 mb-4"
+            >
+              <span
+                v-for="skill in member.skills"
+                :key="skill"
+                class="px-2 py-0.5 rounded text-xs bg-white/10 text-white/80"
+              >
+                {{ skill }}
+              </span>
+            </div>
             <button
               class="w-full px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 hover:bg-red-500/30 text-sm transition-all"
               @click="handleDeleteItem('team', member.id)"
@@ -331,10 +724,294 @@ function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: n
         </div>
       </div>
     </main>
+
+    <!-- Preview Modal -->
+    <div
+      v-if="showPreviewModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      @click.self="showPreviewModal = false"
+    >
+      <div
+        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] p-8 shadow-2xl"
+      >
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-white">Ajouter un Aperçu Web</h2>
+          <button
+            class="text-white/60 hover:text-white transition-colors"
+            @click="showPreviewModal = false"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="handlePreviewSubmit" class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Nom du site web *</label>
+            <input
+              v-model="previewForm.name"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              required
+              placeholder="Ex: Site Web Principal"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">URL *</label>
+            <input
+              v-model="previewForm.url"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="url"
+              required
+              placeholder="https://example.com"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Miniature *</label>
+            <input
+              type="file"
+              accept="image/*"
+              required
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all"
+              @change="(e) => {
+                const file = (e.target as HTMLInputElement).files?.[0]
+                if (file) previewForm.thumbnailFile = file
+              }"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Description</label>
+            <textarea
+              v-model="previewForm.description"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all resize-none"
+              rows="3"
+              placeholder="Description du projet..."
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Technologies (séparées par des virgules)</label
+            >
+            <input
+              v-model="previewForm.technologies"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="Vue.js, Node.js, Firebase"
+            />
+          </div>
+
+          <div class="flex items-center gap-4 pt-4">
+            <button
+              type="button"
+              class="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all font-semibold"
+              @click="showPreviewModal = false"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+              :disabled="isUploading"
+            >
+              {{ isUploading ? 'Enregistrement...' : 'Enregistrer' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Team Member Modal -->
+    <div
+      v-if="showTeamModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+      @click.self="showTeamModal = false"
+    >
+      <div
+        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] p-8 shadow-2xl my-8"
+      >
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-white">Ajouter un Membre d'Équipe</h2>
+          <button
+            class="text-white/60 hover:text-white transition-colors"
+            @click="showTeamModal = false"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="handleTeamSubmit" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-white/90 mb-2">Nom *</label>
+              <input
+                v-model="teamForm.name"
+                class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+                type="text"
+                required
+                placeholder="Jean Dupont"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-white/90 mb-2">Rôle *</label>
+              <input
+                v-model="teamForm.role"
+                class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+                type="text"
+                required
+                placeholder="Directeur Créatif"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Description *</label>
+            <textarea
+              v-model="teamForm.description"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all resize-none"
+              rows="3"
+              required
+              placeholder="Description du membre..."
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-white/90 mb-2">Email</label>
+              <input
+                v-model="teamForm.email"
+                class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+                type="email"
+                placeholder="jean@nelf.com"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-white/90 mb-2">Téléphone</label>
+              <input
+                v-model="teamForm.phone"
+                class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+                type="tel"
+                placeholder="+33 6 12 34 56 78"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Photo de profil</label>
+            <input
+              type="file"
+              accept="image/*"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all"
+              @change="(e) => {
+                const file = (e.target as HTMLInputElement).files?.[0]
+                if (file) teamForm.avatarFile = file
+              }"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Compétences (séparées par des virgules)</label
+            >
+            <input
+              v-model="teamForm.skills"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="Vue.js, Design, Management"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-white/90">Liens sociaux</label>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <input
+                  v-model="teamForm.linkedin"
+                  class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+                  type="url"
+                  placeholder="LinkedIn"
+                />
+              </div>
+              <div>
+                <input
+                  v-model="teamForm.github"
+                  class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+                  type="url"
+                  placeholder="GitHub"
+                />
+              </div>
+              <div>
+                <input
+                  v-model="teamForm.portfolio"
+                  class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+                  type="url"
+                  placeholder="Portfolio"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 pt-4">
+            <button
+              type="button"
+              class="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all font-semibold"
+              @click="showTeamModal = false"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+              :disabled="isUploading"
+            >
+              {{ isUploading ? 'Enregistrement...' : 'Enregistrer' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      v-if="showDeleteConfirm"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      @click.self="showDeleteConfirm = false"
+    >
+      <div
+        class="w-full max-w-md rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] p-8 shadow-2xl"
+      >
+        <h2 class="text-2xl font-bold text-white mb-4">Confirmer la suppression</h2>
+        <p class="text-white/80 mb-6">
+          Êtes-vous sûr de vouloir supprimer cet élément ? Cette action est irréversible.
+        </p>
+        <div class="flex items-center gap-4">
+          <button
+            class="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all font-semibold"
+            @click="showDeleteConfirm = false"
+          >
+            Annuler
+          </button>
+          <button
+            class="flex-1 px-6 py-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-200 hover:bg-red-500/30 transition-all font-semibold disabled:opacity-60"
+            :disabled="isLoading"
+            @click="confirmDelete"
+          >
+            {{ isLoading ? 'Suppression...' : 'Supprimer' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* Additional custom styles if needed */
 </style>
-
