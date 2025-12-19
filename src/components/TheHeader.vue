@@ -1,18 +1,64 @@
 <script setup lang="ts">
-// import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 // const isMenuOpen = ref(false)
 
 /*const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }*/
+
+const router = useRouter()
+
+// 7 taps on the logo within a short window opens the hidden admin login page.
+const secretTapCount = ref(0)
+let resetTimer: number | null = null
+
+const RESET_WINDOW_MS = 2500
+const REQUIRED_TAPS = 7
+
+function onSecretLogoTap() {
+  secretTapCount.value += 1
+
+  if (resetTimer) {
+    window.clearTimeout(resetTimer)
+  }
+  resetTimer = window.setTimeout(() => {
+    secretTapCount.value = 0
+    resetTimer = null
+  }, RESET_WINDOW_MS)
+
+  if (secretTapCount.value >= REQUIRED_TAPS) {
+    secretTapCount.value = 0
+    if (resetTimer) {
+      window.clearTimeout(resetTimer)
+      resetTimer = null
+    }
+    router.push({ name: 'admin-login' })
+  }
+}
+
+onUnmounted(() => {
+  if (resetTimer) {
+    window.clearTimeout(resetTimer)
+    resetTimer = null
+  }
+})
 </script>
 
 <template>
   <header
     class="flex items-center justify-between whitespace-nowrap border-b border-solid bg-[#1a1b41] dark:border-white/10 backdrop-blur-md px-10 py-4 fixed top-0 w-full z-50 transition-all duration-300"
   >
-    <div class="flex items-center gap-3 text-white group cursor-pointer">
+    <div
+      class="flex items-center gap-3 text-white group cursor-pointer select-none"
+      role="button"
+      aria-label="NELF"
+      tabindex="0"
+      @click="onSecretLogoTap"
+      @keydown.enter.prevent="onSecretLogoTap"
+      @keydown.space.prevent="onSecretLogoTap"
+    >
       <div
         class="size-10 flex items-center justify-center text-white from-secondary to-primary rounded-xl shadow-lg group-hover:rotate-12 transition-transform duration-300"
       >

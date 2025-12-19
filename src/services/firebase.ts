@@ -3,15 +3,30 @@ import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 import { getStorage, type FirebaseStorage } from 'firebase/storage'
 
+const requiredEnv = <K extends keyof ImportMetaEnv>(key: K): string => {
+  const value = import.meta.env[key]
+  if (!value) {
+    // Vite inlines env vars at dev-server start / build time. If this is missing,
+    // it's usually because the server wasn't restarted after editing .env,
+    // or the var name/format is wrong (must start with VITE_ and use KEY=value).
+    throw new Error(
+      `[firebase] Missing env var ${String(key)}. ` +
+        `Check your .env/.env.local (project root), ensure it is named correctly and uses "${String(key)}=...". ` +
+        `Then restart the Vite dev server (or rebuild for production).`,
+    )
+  }
+  return value
+}
+
 // Configuration Firebase depuis les variables d'environnement
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: requiredEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: requiredEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: requiredEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: requiredEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: requiredEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: requiredEnv('VITE_FIREBASE_APP_ID'),
+  measurementId: requiredEnv('VITE_FIREBASE_MEASUREMENT_ID'),
 }
 
 // Initialisation de Firebase
