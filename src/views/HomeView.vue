@@ -1,11 +1,29 @@
 <script setup lang="ts">
-// Page d'accueil - à compléter
+import TheHeader from '@/components/TheHeader.vue'
+import TheHero from '@/components/TheHero.vue'
+import ServicesSection from '@/components/ServicesSection.vue'
+import ValuesSection from '@/components/ValuesSection.vue'
+import VisionSection from '@/components/VisionSection.vue'
+import CreationsSection from '@/components/CreationsSection.vue'
+import TeamSection from '@/components/TeamSection.vue'
+import TheFooter from '@/components/TheFooter.vue'
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center">
-    <h1 class="text-4xl font-bold">NELF</h1>
+  <div class="layout-container flex h-full grow flex-col">
+    <TheHeader />
+    <TheHero />
+    <ServicesSection />
+    <ValuesSection />
+    <VisionSection />
+    <CreationsSection />
+    <TeamSection />
+    <TheFooter />
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.layout-container {
+  min-height: 100vh;
+}
+</style>
