@@ -1,21 +1,11 @@
 <script setup lang="ts">
-import AppNavigation from '../components/AppNavigation.vue'
-import HeroSection from '../components/HeroSection.vue'
-import ServicesSection from '../components/ServicesSection.vue'
-import ValueProposition from '../components/ValueProposition.vue'
-import VisionSection from '../components/VisionSection.vue'
-import ProjectsSection from '../components/ProjectsSection.vue'
-import Footer from '../components/Footer.vue'
+// Page d'accueil - à compléter
 </script>
 
 <template>
-  <div class="relative flex min-h-screen w-full flex-col">
-    <AppNavigation />
-    <HeroSection />
-    <ServicesSection />
-    <ValueProposition />
-    <VisionSection />
-    <ProjectsSection />
-    <Footer />
+  <div class="min-h-screen flex items-center justify-center">
+    <h1 class="text-4xl font-bold">NELF</h1>
   </div>
 </template>
+
+<style scoped></style>
