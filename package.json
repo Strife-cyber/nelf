@@ -21,6 +21,8 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/vite": "^4.1.18",
     "firebase": "^12.7.0",
+    "gl-matrix": "^3.4.4",
+    "gsap": "^3.14.2",
     "vue": "^3.5.25",
     "vue-router": "^4.6.3"
   },
