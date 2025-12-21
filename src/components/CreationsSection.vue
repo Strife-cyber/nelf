@@ -1,46 +1,114 @@
 <script setup lang="ts">
-// Section créations/portfolio - sera dynamique plus tard
-const creations = [
-  {
-    id: 1,
-    title: 'E-Shop Mode Urbaine',
-    description:
-      "Refonte complète de l'expérience utilisateur et intégration d'un système de paiement custom.",
-    category: 'Web',
-    year: '2023',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBbhacO8T_-FOCP07f-YxHcTuITirLANqarGAdVd60zAsd9uVsdgNKIXAjl8NR5Twu6zJhNA0kJxRKL88BLYRdG64PW1FeuQBDvZWMAVg4Dk2OKWt1HEYIjGJGcvFpmq10p89AMFw5UzoCXTWbGrAUZepGO3UFtZETrLJgWKQlj209gl3qcHvgxGl6xHO1v-X0nfVGwY2_OMVIretJUPiSh4wwuI7kUTnaNdMH2BUYsYOBOk3BTPWskXXJvJD1xSuss3nY-OnMukiHx',
-    aspect: 'video',
-  },
-  {
-    id: 2,
-    title: "Festival d'Été",
-    description: '',
-    category: 'Print',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAcZH1J01npofzg3AGp4qqIWTUmTv6AUHkAYEiJUn_-TwyVfOv5yqO-YOU_GqUSMheCfO2fdFbKs7__gspdSLu8jl7FRcjCjqlzKKLjbM_DMQ4VHARS7CgOMeIUbQAJK5gO3mPbHt3VEgqgY3sZF3nb-WmWuHkEU_BhZjsfTdjbNI8ZZBBqYKftXsQ-9fOCa04CzKVsf-hPGrQ_G5eH_J0K4qLdw3WDZl_DBJph9fjATmux_D7fXEvP5s1N8Mzd8RHtmtBgIsNWVlY7',
-    aspect: 'portrait',
-  },
-  {
-    id: 3,
-    title: 'Showreel 2024',
-    description: '',
-    category: 'Motion',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBnzgSd8M4-TUI5xia9HALdNuNwMGTbjH0Lxk07B7ZNe47hVldFMs8f0w8-hgodW7aApU4dclolhbjZDCWU1VXXqc3TTm8yt6Oyg62RkNLXZX6fwvWFvcJ82neK6dQ6KIlFidXIJfjEr-q9U8pbPIs4rZfVHdN74bRvaf4stpkFl97J-If7T9yqYM02r1zm8lG3oOMuK3Q7nRA99Cl0DcQCVYYqZuYo1wy6A809RyNkxd-byQVhB8wqDuOOSEyTc5PR3ppPXv-SZ4WX',
-    aspect: 'video',
-    isVideo: true,
-  },
-  {
-    id: 4,
-    title: 'Conférence Tech',
-    description: 'Identité événementielle',
-    category: '',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCPqO4u3IFBWvjpoQeHxfwV17ltEjIuo1fQF108WaUCElcjwLmJW9im0chWPboy6c1jFKPQHwA1bgDBjt1IUu7xNXDNaQlOy2BTgCHtSWDKgNlbxB0Pc4eRQJSWPH17ejGr9r-v_wTXElUAVWxBBGHt-jLi-r5vCEh9e3_LthoFfsf0qNCyQDA6InE5YECMO0yQcCBAh9KC3nNAAgs84aVapsVUEexFstJPw-QP5a52d56zkLtPKAKPYXo7sFR7viKFKEZvgqzR0HoU',
-    aspect: 'square',
-  },
-]
+import { onMounted, ref, computed } from 'vue'
+import { flyersService, videosService, previewsService } from '@/services/firestore'
+import type { Flyer, Video, WebsitePreview } from '@/types/models'
+
+type CreationItem = {
+  id: string
+  type: 'flyer' | 'video' | 'website'
+  title: string
+  eventTitle?: string
+  description?: string
+  shortInfo?: string
+  image: string
+  url?: string
+  aspect: 'portrait' | 'video' | 'square'
+  isVideo?: boolean
+  data: Flyer | Video | WebsitePreview
+}
+
+const flyers = ref<Flyer[]>([])
+const videos = ref<Video[]>([])
+const websites = ref<WebsitePreview[]>([])
+const isLoading = ref(true)
+const selectedItem = ref<CreationItem | null>(null)
+const showDetailModal = ref(false)
+
+const creations = computed<CreationItem[]>(() => {
+  const items: CreationItem[] = []
+
+  // Add flyers - use full-size images for better quality
+  flyers.value.forEach((flyer) => {
+    items.push({
+      id: flyer.id,
+      type: 'flyer',
+      title: flyer.name,
+      eventTitle: flyer.eventTitle,
+      description: flyer.description,
+      shortInfo: flyer.shortInfo,
+      image: flyer.url || flyer.thumbnailUrl || '', // Use full-size URL first
+      aspect: 'portrait',
+      data: flyer,
+    })
+  })
+
+  // Add videos - use full-size images for better quality
+  videos.value.forEach((video) => {
+    items.push({
+      id: video.id,
+      type: 'video',
+      title: video.name,
+      eventTitle: video.eventTitle,
+      description: video.description,
+      shortInfo: video.shortInfo,
+      image: video.url || video.thumbnailUrl || '', // Use full-size URL first
+      url: video.url,
+      aspect: 'video',
+      isVideo: true,
+      data: video,
+    })
+  })
+
+  // Add websites - use full-size images for better quality
+  websites.value.forEach((website) => {
+    items.push({
+      id: website.id,
+      type: 'website',
+      title: website.name,
+      description: website.description,
+      image: website.thumbnailUrl, // Website thumbnails are full screenshots
+      url: website.url,
+      aspect: 'video',
+      data: website,
+    })
+  })
+
+  return items
+})
+
+onMounted(async () => {
+  try {
+    isLoading.value = true
+    const [flyersData, videosData, websitesData] = await Promise.all([
+      flyersService.readAll(true),
+      videosService.readAll(true),
+      previewsService.readAll(true),
+    ])
+    flyers.value = flyersData
+    videos.value = videosData
+    websites.value = websitesData
+  } catch (error) {
+    console.error('Error loading creations:', error)
+  } finally {
+    isLoading.value = false
+  }
+})
+
+function handleItemClick(item: CreationItem) {
+  if (item.type === 'website' && item.url) {
+    // Navigate to website
+    window.open(item.url, '_blank')
+  } else {
+    // Show detail modal
+    selectedItem.value = item
+    showDetailModal.value = true
+  }
+}
+
+function closeModal() {
+  showDetailModal.value = false
+  selectedItem.value = null
+}
 </script>
 
 <template>
@@ -65,23 +133,26 @@ const creations = [
         </div>
       </div>
 
+      <div v-if="isLoading" class="flex items-center justify-center py-20">
+        <div class="text-[#637588] dark:text-gray-400">Chargement des créations...</div>
+      </div>
       <div
+        v-else-if="creations.length > 0"
         class="flex overflow-x-auto gap-6 pb-12 snap-x snap-mandatory no-scrollbar px-4 -mx-4 md:px-0 md:mx-0"
       >
         <div
           v-for="creation in creations"
           :key="creation.id"
-          :class="[
-            'flex-none snap-center group relative rounded-2xl overflow-hidden shadow-2xl',
-            creation.aspect === 'video' ? 'w-[85vw] md:w-150 aspect-video' : '',
-            creation.aspect === 'portrait' ? 'w-[85vw] md:w-100 aspect-9/16 md:aspect-3/4' : '',
-            creation.aspect === 'square' ? 'w-[85vw] md:w-100 aspect-square' : '',
-            creation.isVideo ? 'bg-gray-900' : '',
-          ]"
+          class="flex-none snap-center group relative rounded-2xl overflow-hidden shadow-2xl cursor-pointer w-[85vw] h-[500px] md:w-[450px] md:h-[600px] bg-gray-900"
+          @click="handleItemClick(creation)"
         >
           <div
-            class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-            :class="creation.isVideo ? 'opacity-80 group-hover:opacity-60' : ''"
+            class="absolute inset-0 bg-cover transition-transform duration-700 group-hover:scale-105"
+            :class="[
+              creation.isVideo ? 'opacity-80 group-hover:opacity-60' : '',
+              creation.type === 'website' ? 'bg-top' : 'bg-center',
+              creation.type === 'flyer' ? 'object-contain' : '',
+            ]"
             :style="{ backgroundImage: `url(${creation.image})` }"
           ></div>
           <div
@@ -90,7 +161,7 @@ const creations = [
           ></div>
           <div v-if="creation.isVideo" class="absolute inset-0 flex items-center justify-center">
             <div
-              class="size-20 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-primary group-hover:border-primary transition-all duration-300 cursor-pointer shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              class="size-20 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-primary group-hover:border-primary transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.2)]"
             >
               <span class="material-symbols-outlined text-4xl ml-1">play_arrow</span>
             </div>
@@ -103,25 +174,117 @@ const creations = [
                 : '',
             ]"
           >
-            <div v-if="creation.category" class="flex items-center gap-3 mb-2">
+            <div class="flex items-center gap-3 mb-2">
               <span
                 :class="[
                   'px-3 py-1 text-white text-xs font-bold rounded-full uppercase tracking-wide',
-                  creation.category === 'Web' ? 'bg-primary' : '',
-                  creation.category === 'Print' ? 'bg-white text-secondary' : '',
-                  creation.category === 'Motion' ? 'bg-accent' : '',
+                  creation.type === 'website' ? 'bg-[#c62d6a]' : '',
+                  creation.type === 'flyer' ? 'bg-black' : '',
+                  creation.type === 'video' ? 'bg-[#4c2e6c]' : '',
                 ]"
               >
-                {{ creation.category }}
-              </span>
-              <span v-if="creation.year" class="text-gray-300 text-xs uppercase tracking-wider">
-                {{ creation.year }}
+                {{
+                  creation.type === 'website'
+                    ? 'Web'
+                    : creation.type === 'flyer'
+                      ? 'Print'
+                      : 'Motion'
+                }}
               </span>
             </div>
             <h3 class="text-white text-2xl font-bold mb-2">{{ creation.title }}</h3>
+            <p v-if="creation.eventTitle" class="text-[#c62d6a] text-sm font-medium mb-1">
+              {{ creation.eventTitle }}
+            </p>
+            <p v-if="creation.shortInfo" class="text-gray-300 text-xs mb-1">
+              {{ creation.shortInfo }}
+            </p>
             <p v-if="creation.description" class="text-gray-300 text-sm line-clamp-2">
               {{ creation.description }}
             </p>
+          </div>
+        </div>
+      </div>
+      <div v-else class="text-center py-20 text-[#637588] dark:text-gray-400">
+        Aucune création disponible pour le moment
+      </div>
+
+      <!-- Detail Modal -->
+      <div
+        v-if="showDetailModal && selectedItem"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        @click.self="closeModal"
+      >
+        <div
+          class="w-full max-w-4xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#121226] to-[#2b2d75] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+        >
+          <div class="flex items-center justify-between p-6 border-b border-white/10">
+            <h2 class="text-2xl font-bold text-white">{{ selectedItem.title }}</h2>
+            <button class="text-white/60 hover:text-white transition-colors" @click="closeModal">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-6">
+            <div class="mb-6">
+              <img
+                :src="selectedItem.image"
+                :alt="selectedItem.title"
+                class="w-full rounded-xl max-h-96"
+                :class="[
+                  selectedItem.aspect === 'portrait' ? 'aspect-3/4 object-cover' : '',
+                  selectedItem.type === 'website'
+                    ? 'aspect-video object-cover object-top'
+                    : selectedItem.aspect === 'video'
+                      ? 'aspect-video object-cover'
+                      : '',
+                ]"
+              />
+            </div>
+
+            <div class="space-y-4 text-white">
+              <div v-if="selectedItem.eventTitle">
+                <h3 class="text-[#c62d6a] text-xl font-bold mb-2">Événement</h3>
+                <p class="text-white/90">{{ selectedItem.eventTitle }}</p>
+              </div>
+
+              <div v-if="selectedItem.shortInfo">
+                <h3 class="text-white/80 font-semibold mb-2">Informations</h3>
+                <p class="text-white/70">{{ selectedItem.shortInfo }}</p>
+              </div>
+
+              <div v-if="selectedItem.description">
+                <h3 class="text-white/80 font-semibold mb-2">Description</h3>
+                <p class="text-white/70">{{ selectedItem.description }}</p>
+              </div>
+
+              <div v-if="selectedItem.type === 'video' && selectedItem.url">
+                <video
+                  :src="selectedItem.url"
+                  :poster="selectedItem.image"
+                  controls
+                  class="w-full rounded-xl"
+                ></video>
+              </div>
+
+              <div v-if="selectedItem.type === 'website' && selectedItem.url" class="pt-4">
+                <a
+                  :href="selectedItem.url"
+                  target="_blank"
+                  class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white hover:bg-[#d63d7a] transition-all font-semibold"
+                >
+                  <span>Visiter le site</span>
+                  <span class="material-symbols-outlined">open_in_new</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
