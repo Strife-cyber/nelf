@@ -239,6 +239,31 @@ function handleVideoUpload() {
   showVideoModal.value = true
 }
 
+async function handleVideoFileChange(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    isProcessingVideo.value = true
+    errorMsg.value = null
+    try {
+      // Check if file is larger than 10MB and trim if necessary
+      if (file.size > 10 * 1024 * 1024) {
+        errorMsg.value = 'Vidéo trop grande, traitement en cours pour optimiser...'
+        videoForm.value.file = await trimVideoTo10MB(file)
+        errorMsg.value = null
+      } else {
+        videoForm.value.file = file
+      }
+    } catch (error) {
+      console.error('Error processing video:', error)
+      errorMsg.value = 'Erreur lors du traitement de la vidéo. Veuillez réessayer.'
+      videoForm.value.file = null
+    } finally {
+      isProcessingVideo.value = false
+    }
+  }
+}
+
 async function handleVideoSubmit() {
   if (!videoForm.value.name || !videoForm.value.file) {
     errorMsg.value = 'Veuillez remplir tous les champs obligatoires'
@@ -981,31 +1006,7 @@ async function confirmDelete() {
               required
               :disabled="isProcessingVideo"
               class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all disabled:opacity-50"
-              @change="
-                async (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0]
-                  if (file) {
-                    isProcessingVideo.value = true
-                    errorMsg.value = null
-                    try {
-                      // Check if file is larger than 10MB and trim if necessary
-                      if (file.size > 10 * 1024 * 1024) {
-                        errorMsg.value = 'Vidéo trop grande, traitement en cours pour optimiser...'
-                        videoForm.file = await trimVideoTo10MB(file)
-                        errorMsg.value = null
-                      } else {
-                        videoForm.file = file
-                      }
-                    } catch (error) {
-                      console.error('Error processing video:', error)
-                      errorMsg.value = 'Erreur lors du traitement de la vidéo. Veuillez réessayer.'
-                      videoForm.file = null
-                    } finally {
-                      isProcessingVideo.value = false
-                    }
-                  }
-                }
-              "
+              @change="handleVideoFileChange"
             />
             <p v-if="isProcessingVideo" class="mt-2 text-sm text-white/60">
               Traitement de la vidéo en cours... Cela peut prendre quelques instants.
