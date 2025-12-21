@@ -9,7 +9,9 @@ export interface Flyer {
   thumbnailUrl?: string
   uploadedAt: string
   uploadedBy?: string
+  eventTitle?: string
   description?: string
+  shortInfo?: string
   tags?: string[]
   order?: number
   isActive?: boolean
@@ -29,7 +31,9 @@ export interface Video {
   duration?: number // in seconds
   uploadedAt: string
   uploadedBy?: string
+  eventTitle?: string
   description?: string
+  shortInfo?: string
   tags?: string[]
   order?: number
   isActive?: boolean

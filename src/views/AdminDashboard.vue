@@ -4,12 +4,7 @@ import { useRouter } from 'vue-router'
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
 import { getFirebaseAuth } from '@/services/firebase'
 import type { Flyer, Video, WebsitePreview, TeamMember } from '@/types/models'
-import {
-  flyersService,
-  videosService,
-  previewsService,
-  teamService,
-} from '@/services/firestore'
+import { flyersService, videosService, previewsService, teamService } from '@/services/firestore'
 import { uploadImage, uploadVideo, getThumbnailUrl } from '@/services/cloudinary-upload'
 
 const router = useRouter()
@@ -28,6 +23,8 @@ const previews = ref<WebsitePreview[]>([])
 const teamMembers = ref<TeamMember[]>([])
 
 // Modal states
+const showFlyerModal = ref(false)
+const showVideoModal = ref(false)
 const showPreviewModal = ref(false)
 const showTeamModal = ref(false)
 const showDeleteConfirm = ref(false)
@@ -35,6 +32,24 @@ const deleteItemType = ref<'flyers' | 'videos' | 'previews' | 'team' | null>(nul
 const deleteItemId = ref<string | null>(null)
 
 // Form data
+const flyerForm = ref({
+  name: '',
+  eventTitle: '',
+  description: '',
+  shortInfo: '',
+  tags: '',
+  file: null as File | null,
+})
+
+const videoForm = ref({
+  name: '',
+  eventTitle: '',
+  description: '',
+  shortInfo: '',
+  tags: '',
+  file: null as File | null,
+})
+
 const previewForm = ref({
   name: '',
   url: '',
@@ -79,12 +94,7 @@ async function loadAllData() {
   isLoading.value = true
   errorMsg.value = null
   try {
-    await Promise.all([
-      loadFlyers(),
-      loadVideos(),
-      loadPreviews(),
-      loadTeamMembers(),
-    ])
+    await Promise.all([loadFlyers(), loadVideos(), loadPreviews(), loadTeamMembers()])
   } catch (error) {
     console.error('Error loading data:', error)
     errorMsg.value = 'Erreur lors du chargement des données'
@@ -142,88 +152,137 @@ async function handleLogout() {
   }
 }
 
-// File upload handlers
-async function handleFlyerUpload() {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.onchange = async (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0]
-    if (!file) return
-
-    isUploading.value = true
-    errorMsg.value = null
-
-    try {
-      // Upload to Cloudinary
-      const uploadResult = await uploadImage(file, 'nelf/flyers')
-      const thumbnailUrl = getThumbnailUrl(uploadResult.publicId, 300)
-
-      // Get name from file or prompt
-      const name = file.name.replace(/\.[^/.]+$/, '') || 'Nouvelle affiche'
-
-      // Save to Firestore
-      const flyerData: Omit<Flyer, 'id' | 'createdAt' | 'updatedAt'> = {
-        name,
-        url: uploadResult.secureUrl,
-        thumbnailUrl,
-        uploadedAt: new Date().toISOString(),
-        uploadedBy: user.value?.email || user.value?.uid,
-        isActive: true,
-      }
-
-      await flyersService.create(flyerData)
-      await loadFlyers()
-    } catch (error) {
-      console.error('Error uploading flyer:', error)
-      errorMsg.value = 'Erreur lors de l\'upload de l\'affiche'
-    } finally {
-      isUploading.value = false
+// Helper function to remove undefined values from objects (Firestore doesn't support undefined)
+function removeUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const cleaned: Partial<T> = {}
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key]
     }
   }
-  input.click()
+  return cleaned
 }
 
-async function handleVideoUpload() {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'video/*'
-  input.onchange = async (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0]
-    if (!file) return
-
-    isUploading.value = true
-    errorMsg.value = null
-
-    try {
-      // Upload to Cloudinary
-      const uploadResult = await uploadVideo(file, 'nelf/videos')
-      const thumbnailUrl = getThumbnailUrl(uploadResult.publicId, 300)
-
-      // Get name from file or prompt
-      const name = file.name.replace(/\.[^/.]+$/, '') || 'Nouvelle vidéo'
-
-      // Save to Firestore
-      const videoData: Omit<Video, 'id' | 'createdAt' | 'updatedAt'> = {
-        name,
-        url: uploadResult.secureUrl,
-        thumbnailUrl,
-        uploadedAt: new Date().toISOString(),
-        uploadedBy: user.value?.email || user.value?.uid,
-        videoType: 'direct',
-        isActive: true,
-      }
-
-      await videosService.create(videoData)
-      await loadVideos()
-    } catch (error) {
-      console.error('Error uploading video:', error)
-      errorMsg.value = 'Erreur lors de l\'upload de la vidéo'
-    } finally {
-      isUploading.value = false
-    }
+// File upload handlers
+function handleFlyerUpload() {
+  // Reset form
+  flyerForm.value = {
+    name: '',
+    eventTitle: '',
+    description: '',
+    shortInfo: '',
+    tags: '',
+    file: null,
   }
-  input.click()
+  showFlyerModal.value = true
+}
+
+async function handleFlyerSubmit() {
+  if (!flyerForm.value.name || !flyerForm.value.file) {
+    errorMsg.value = 'Veuillez remplir tous les champs obligatoires'
+    return
+  }
+
+  isUploading.value = true
+  errorMsg.value = null
+  showFlyerModal.value = false
+
+  try {
+    // Upload to Cloudinary
+    const uploadResult = await uploadImage(flyerForm.value.file, 'nelf/flyers')
+    const thumbnailUrl = getThumbnailUrl(uploadResult.publicId, 300)
+
+    // Parse tags
+    const tags = flyerForm.value.tags
+      ? flyerForm.value.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : undefined
+
+    // Save to Firestore - remove undefined values
+    const flyerData = removeUndefined({
+      name: flyerForm.value.name,
+      url: uploadResult.secureUrl,
+      thumbnailUrl,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: user.value?.email || user.value?.uid,
+      eventTitle: flyerForm.value.eventTitle || undefined,
+      description: flyerForm.value.description || undefined,
+      shortInfo: flyerForm.value.shortInfo || undefined,
+      tags,
+      isActive: true,
+    })
+
+    await flyersService.create(flyerData as Omit<Flyer, 'id' | 'createdAt' | 'updatedAt'>)
+    await loadFlyers()
+  } catch (error) {
+    console.error('Error uploading flyer:', error)
+    errorMsg.value = "Erreur lors de l'upload de l'affiche"
+  } finally {
+    isUploading.value = false
+  }
+}
+
+function handleVideoUpload() {
+  // Reset form
+  videoForm.value = {
+    name: '',
+    eventTitle: '',
+    description: '',
+    shortInfo: '',
+    tags: '',
+    file: null,
+  }
+  showVideoModal.value = true
+}
+
+async function handleVideoSubmit() {
+  if (!videoForm.value.name || !videoForm.value.file) {
+    errorMsg.value = 'Veuillez remplir tous les champs obligatoires'
+    return
+  }
+
+  isUploading.value = true
+  errorMsg.value = null
+  showVideoModal.value = false
+
+  try {
+    // Upload to Cloudinary
+    const uploadResult = await uploadVideo(videoForm.value.file, 'nelf/videos')
+    const thumbnailUrl = getThumbnailUrl(uploadResult.publicId, 300)
+
+    // Parse tags
+    const tags = videoForm.value.tags
+      ? videoForm.value.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : undefined
+
+    // Save to Firestore - remove undefined values
+    const videoData = removeUndefined({
+      name: videoForm.value.name,
+      url: uploadResult.secureUrl,
+      thumbnailUrl,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: user.value?.email || user.value?.uid,
+      eventTitle: videoForm.value.eventTitle || undefined,
+      description: videoForm.value.description || undefined,
+      shortInfo: videoForm.value.shortInfo || undefined,
+      tags,
+      videoType: 'direct',
+      isActive: true,
+    })
+
+    await videosService.create(videoData as Omit<Video, 'id' | 'createdAt' | 'updatedAt'>)
+    await loadVideos()
+  } catch (error) {
+    console.error('Error uploading video:', error)
+    errorMsg.value = "Erreur lors de l'upload de la vidéo"
+  } finally {
+    isUploading.value = false
+  }
 }
 
 function handlePreviewUpload() {
@@ -255,11 +314,14 @@ async function handlePreviewSubmit() {
 
     // Parse technologies
     const technologies = previewForm.value.technologies
-      ? previewForm.value.technologies.split(',').map((t) => t.trim()).filter(Boolean)
+      ? previewForm.value.technologies
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
       : undefined
 
-    // Save to Firestore
-    const previewData: Omit<WebsitePreview, 'id' | 'createdAt' | 'updatedAt'> = {
+    // Save to Firestore - remove undefined values
+    const previewData = removeUndefined({
       name: previewForm.value.name,
       url: previewForm.value.url,
       thumbnailUrl,
@@ -268,13 +330,15 @@ async function handlePreviewSubmit() {
       description: previewForm.value.description || undefined,
       technologies,
       isActive: true,
-    }
+    })
 
-    await previewsService.create(previewData)
+    await previewsService.create(
+      previewData as Omit<WebsitePreview, 'id' | 'createdAt' | 'updatedAt'>,
+    )
     await loadPreviews()
   } catch (error) {
     console.error('Error uploading preview:', error)
-    errorMsg.value = 'Erreur lors de l\'upload de l\'aperçu'
+    errorMsg.value = "Erreur lors de l'upload de l'aperçu"
   } finally {
     isUploading.value = false
   }
@@ -325,7 +389,10 @@ async function handleTeamSubmit() {
 
     // Parse skills
     const skills = teamForm.value.skills
-      ? teamForm.value.skills.split(',').map((s) => s.trim()).filter(Boolean)
+      ? teamForm.value.skills
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
       : undefined
 
     // Build social links
@@ -334,7 +401,8 @@ async function handleTeamSubmit() {
     if (teamForm.value.github) socialLinks.github = teamForm.value.github
     if (teamForm.value.portfolio) socialLinks.portfolio = teamForm.value.portfolio
 
-    const memberData: Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'> = {
+    // Save to Firestore - remove undefined values
+    const memberData = removeUndefined({
       name: teamForm.value.name,
       role: teamForm.value.role,
       description: teamForm.value.description,
@@ -345,9 +413,9 @@ async function handleTeamSubmit() {
       socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
       skills,
       isActive: true,
-    }
+    })
 
-    await teamService.create(memberData)
+    await teamService.create(memberData as Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'>)
     await loadTeamMembers()
   } catch (error) {
     console.error('Error creating team member:', error)
@@ -357,10 +425,7 @@ async function handleTeamSubmit() {
   }
 }
 
-function handleDeleteItem(
-  type: 'flyers' | 'videos' | 'previews' | 'team',
-  id: string,
-) {
+function handleDeleteItem(type: 'flyers' | 'videos' | 'previews' | 'team', id: string) {
   deleteItemType.value = type
   deleteItemId.value = id
   showDeleteConfirm.value = true
@@ -519,12 +584,18 @@ async function confirmDelete() {
               />
             </div>
             <div class="flex items-center justify-between">
-              <div>
+              <div class="flex-1">
                 <h3 class="font-semibold text-white">{{ flyer.name }}</h3>
+                <p v-if="flyer.eventTitle" class="text-sm text-[#c62d6a] mt-1 font-medium">
+                  {{ flyer.eventTitle }}
+                </p>
                 <p class="text-xs text-white/60 mt-1">
                   {{ new Date(flyer.uploadedAt).toLocaleDateString('fr-FR') }}
                 </p>
-                <p v-if="flyer.description" class="text-xs text-white/50 mt-1">
+                <p v-if="flyer.shortInfo" class="text-xs text-white/70 mt-1">
+                  {{ flyer.shortInfo }}
+                </p>
+                <p v-if="flyer.description" class="text-xs text-white/50 mt-1 line-clamp-2">
                   {{ flyer.description }}
                 </p>
               </div>
@@ -560,7 +631,9 @@ async function confirmDelete() {
             :key="video.id"
             class="rounded-2xl bg-white/10 border border-white/20 p-6 backdrop-blur-md hover:bg-white/15 transition-all"
           >
-            <div class="aspect-video rounded-xl bg-white/5 mb-4 flex items-center justify-center overflow-hidden">
+            <div
+              class="aspect-video rounded-xl bg-white/5 mb-4 flex items-center justify-center overflow-hidden"
+            >
               <video
                 v-if="video.thumbnailUrl"
                 :src="video.url"
@@ -573,12 +646,18 @@ async function confirmDelete() {
               </svg>
             </div>
             <div class="flex items-center justify-between">
-              <div>
+              <div class="flex-1">
                 <h3 class="font-semibold text-white">{{ video.name }}</h3>
+                <p v-if="video.eventTitle" class="text-sm text-[#c62d6a] mt-1 font-medium">
+                  {{ video.eventTitle }}
+                </p>
                 <p class="text-xs text-white/60 mt-1">
                   {{ new Date(video.uploadedAt).toLocaleDateString('fr-FR') }}
                 </p>
-                <p v-if="video.description" class="text-sm text-white/70 mt-2">
+                <p v-if="video.shortInfo" class="text-xs text-white/70 mt-1">
+                  {{ video.shortInfo }}
+                </p>
+                <p v-if="video.description" class="text-sm text-white/70 mt-2 line-clamp-2">
                   {{ video.description }}
                 </p>
               </div>
@@ -702,10 +781,7 @@ async function confirmDelete() {
               </div>
             </div>
             <p class="text-sm text-white/80 mb-4">{{ member.description }}</p>
-            <div
-              v-if="member.skills && member.skills.length > 0"
-              class="flex flex-wrap gap-1 mb-4"
-            >
+            <div v-if="member.skills && member.skills.length > 0" class="flex flex-wrap gap-1 mb-4">
               <span
                 v-for="skill in member.skills"
                 :key="skill"
@@ -725,6 +801,246 @@ async function confirmDelete() {
       </div>
     </main>
 
+    <!-- Flyer Modal -->
+    <div
+      v-if="showFlyerModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      @click.self="showFlyerModal = false"
+    >
+      <div
+        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] shadow-2xl flex flex-col max-h-[80vh]"
+      >
+        <div class="flex items-center justify-between p-8 pb-4 border-b border-white/10">
+          <h2 class="text-2xl font-bold text-white">Ajouter une Affiche</h2>
+          <button
+            class="text-white/60 hover:text-white transition-colors"
+            @click="showFlyerModal = false"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="handleFlyerSubmit" class="flex-1 overflow-y-auto p-8 space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Nom *</label>
+            <input
+              v-model="flyerForm.name"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              required
+              placeholder="Nom de l'affiche"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Titre de l'événement</label
+            >
+            <input
+              v-model="flyerForm.eventTitle"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="Titre de l'événement"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Fichier *</label>
+            <input
+              type="file"
+              accept="image/*"
+              required
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all"
+              @change="
+                (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0]
+                  if (file) flyerForm.file = file
+                }
+              "
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Description</label>
+            <textarea
+              v-model="flyerForm.description"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all resize-none"
+              rows="3"
+              placeholder="Description de l'affiche..."
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Informations courtes</label
+            >
+            <input
+              v-model="flyerForm.shortInfo"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="Informations courtes..."
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Tags (séparés par des virgules)</label
+            >
+            <input
+              v-model="flyerForm.tags"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="tag1, tag2, tag3"
+            />
+          </div>
+
+          <div class="flex items-center gap-4 pt-4 border-t border-white/10">
+            <button
+              type="button"
+              class="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all font-semibold"
+              @click="showFlyerModal = false"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+              :disabled="isUploading"
+            >
+              {{ isUploading ? 'Enregistrement...' : 'Enregistrer' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div
+      v-if="showVideoModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      @click.self="showVideoModal = false"
+    >
+      <div
+        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] shadow-2xl flex flex-col max-h-[80vh]"
+      >
+        <div class="flex items-center justify-between p-8 pb-4 border-b border-white/10">
+          <h2 class="text-2xl font-bold text-white">Ajouter une Vidéo</h2>
+          <button
+            class="text-white/60 hover:text-white transition-colors"
+            @click="showVideoModal = false"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="handleVideoSubmit" class="flex-1 overflow-y-auto p-8 space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Nom *</label>
+            <input
+              v-model="videoForm.name"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              required
+              placeholder="Nom de la vidéo"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Titre de l'événement</label
+            >
+            <input
+              v-model="videoForm.eventTitle"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="Titre de l'événement"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Fichier *</label>
+            <input
+              type="file"
+              accept="video/*"
+              required
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all"
+              @change="
+                (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0]
+                  if (file) videoForm.file = file
+                }
+              "
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2">Description</label>
+            <textarea
+              v-model="videoForm.description"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all resize-none"
+              rows="3"
+              placeholder="Description de la vidéo..."
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Informations courtes</label
+            >
+            <input
+              v-model="videoForm.shortInfo"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="Informations courtes..."
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-white/90 mb-2"
+              >Tags (séparés par des virgules)</label
+            >
+            <input
+              v-model="videoForm.tags"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-[#c62d6a]/50 focus:border-[#c62d6a]/50 transition-all"
+              type="text"
+              placeholder="tag1, tag2, tag3"
+            />
+          </div>
+
+          <div class="flex items-center gap-4 pt-4 border-t border-white/10">
+            <button
+              type="button"
+              class="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all font-semibold"
+              @click="showVideoModal = false"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
+              :disabled="isUploading"
+            >
+              {{ isUploading ? 'Enregistrement...' : 'Enregistrer' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Preview Modal -->
     <div
       v-if="showPreviewModal"
@@ -732,21 +1048,26 @@ async function confirmDelete() {
       @click.self="showPreviewModal = false"
     >
       <div
-        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] p-8 shadow-2xl"
+        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] shadow-2xl flex flex-col max-h-[80vh]"
       >
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center justify-between p-8 pb-4 border-b border-white/10">
           <h2 class="text-2xl font-bold text-white">Ajouter un Aperçu Web</h2>
           <button
             class="text-white/60 hover:text-white transition-colors"
             @click="showPreviewModal = false"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
-        <form @submit.prevent="handlePreviewSubmit" class="space-y-4">
+        <form @submit.prevent="handlePreviewSubmit" class="flex-1 overflow-y-auto p-8 space-y-4">
           <div>
             <label class="block text-sm font-semibold text-white/90 mb-2">Nom du site web *</label>
             <input
@@ -776,10 +1097,12 @@ async function confirmDelete() {
               accept="image/*"
               required
               class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all"
-              @change="(e) => {
-                const file = (e.target as HTMLInputElement).files?.[0]
-                if (file) previewForm.thumbnailFile = file
-              }"
+              @change="
+                (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0]
+                  if (file) previewForm.thumbnailFile = file
+                }
+              "
             />
           </div>
 
@@ -805,7 +1128,7 @@ async function confirmDelete() {
             />
           </div>
 
-          <div class="flex items-center gap-4 pt-4">
+          <div class="flex items-center gap-4 pt-4 border-t border-white/10">
             <button
               type="button"
               class="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all font-semibold"
@@ -828,25 +1151,30 @@ async function confirmDelete() {
     <!-- Team Member Modal -->
     <div
       v-if="showTeamModal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       @click.self="showTeamModal = false"
     >
       <div
-        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] p-8 shadow-2xl my-8"
+        class="w-full max-w-2xl rounded-3xl border border-white/20 bg-gradient-to-br from-[#2b2d75] to-[#4c2e6c] shadow-2xl flex flex-col max-h-[80vh]"
       >
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center justify-between p-8 pb-4 border-b border-white/10">
           <h2 class="text-2xl font-bold text-white">Ajouter un Membre d'Équipe</h2>
           <button
             class="text-white/60 hover:text-white transition-colors"
             @click="showTeamModal = false"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
-        <form @submit.prevent="handleTeamSubmit" class="space-y-4">
+        <form @submit.prevent="handleTeamSubmit" class="flex-1 overflow-y-auto p-8 space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-semibold text-white/90 mb-2">Nom *</label>
@@ -910,10 +1238,12 @@ async function confirmDelete() {
               type="file"
               accept="image/*"
               class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all"
-              @change="(e) => {
-                const file = (e.target as HTMLInputElement).files?.[0]
-                if (file) teamForm.avatarFile = file
-              }"
+              @change="
+                (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0]
+                  if (file) teamForm.avatarFile = file
+                }
+              "
             />
           </div>
 
@@ -959,7 +1289,7 @@ async function confirmDelete() {
             </div>
           </div>
 
-          <div class="flex items-center gap-4 pt-4">
+          <div class="flex items-center gap-4 pt-4 border-t border-white/10">
             <button
               type="button"
               class="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 transition-all font-semibold"
