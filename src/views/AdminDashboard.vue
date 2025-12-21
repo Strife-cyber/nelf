@@ -6,6 +6,7 @@ import { getFirebaseAuth } from '@/services/firebase'
 import type { Flyer, Video, WebsitePreview, TeamMember } from '@/types/models'
 import { flyersService, videosService, previewsService, teamService } from '@/services/firestore'
 import { uploadImage, uploadVideo, getThumbnailUrl } from '@/services/cloudinary-upload'
+import { trimVideoTo10MB } from '@/services/video-trimmer'
 
 const router = useRouter()
 const auth = getFirebaseAuth()
@@ -13,6 +14,7 @@ const auth = getFirebaseAuth()
 const user = ref<User | null>(null)
 const isLoading = ref(false)
 const isUploading = ref(false)
+const isProcessingVideo = ref(false)
 const activeTab = ref<'flyers' | 'videos' | 'previews' | 'team'>('flyers')
 const errorMsg = ref<string | null>(null)
 
@@ -977,14 +979,41 @@ async function confirmDelete() {
               type="file"
               accept="video/*"
               required
-              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all"
+              :disabled="isProcessingVideo"
+              class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#c62d6a] file:text-white hover:file:bg-[#d63d7a] transition-all disabled:opacity-50"
               @change="
-                (e) => {
+                async (e) => {
                   const file = (e.target as HTMLInputElement).files?.[0]
-                  if (file) videoForm.file = file
+                  if (file) {
+                    isProcessingVideo.value = true
+                    errorMsg.value = null
+                    try {
+                      // Check if file is larger than 10MB and trim if necessary
+                      if (file.size > 10 * 1024 * 1024) {
+                        errorMsg.value = 'Vidéo trop grande, traitement en cours pour optimiser...'
+                        videoForm.file = await trimVideoTo10MB(file)
+                        errorMsg.value = null
+                      } else {
+                        videoForm.file = file
+                      }
+                    } catch (error) {
+                      console.error('Error processing video:', error)
+                      errorMsg.value = 'Erreur lors du traitement de la vidéo. Veuillez réessayer.'
+                      videoForm.file = null
+                    } finally {
+                      isProcessingVideo.value = false
+                    }
+                  }
                 }
               "
             />
+            <p v-if="isProcessingVideo" class="mt-2 text-sm text-white/60">
+              Traitement de la vidéo en cours... Cela peut prendre quelques instants.
+            </p>
+            <p v-if="videoForm.file" class="mt-2 text-xs text-white/50">
+              Fichier sélectionné: {{ videoForm.file.name }} 
+              ({{ (videoForm.file.size / 1024 / 1024).toFixed(2) }} MB)
+            </p>
           </div>
 
           <div>
@@ -1032,9 +1061,9 @@ async function confirmDelete() {
             <button
               type="submit"
               class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-[#c62d6a] to-[#4c2e6c] text-white hover:from-[#d63d7a] hover:to-[#5c3e7c] transition-all font-semibold shadow-lg disabled:opacity-60"
-              :disabled="isUploading"
+              :disabled="isUploading || isProcessingVideo"
             >
-              {{ isUploading ? 'Enregistrement...' : 'Enregistrer' }}
+              {{ isUploading ? 'Enregistrement...' : isProcessingVideo ? 'Traitement...' : 'Enregistrer' }}
             </button>
           </div>
         </form>

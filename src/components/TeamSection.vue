@@ -12,10 +12,10 @@ const gradients = [
   'from-[#4c2e6c] via-[#4c2e6c]/50 to-transparent',
   'from-[#c62d6a] via-[#c62d6a]/50 to-transparent',
   'from-[#2b2d75] via-[#2b2d75]/50 to-transparent',
-]
+] as const
 
 function getGradient(index: number): string {
-  return gradients[index % gradients.length]
+  return gradients[index % gradients.length] || gradients[0]
 }
 
 onMounted(async () => {
@@ -87,7 +87,9 @@ function closeModal() {
             <p
               :class="[
                 'font-medium mb-4',
-                member.role.includes('CEO') || member.role.includes('Dév') || member.role.includes('Lead')
+                member.role.includes('CEO') ||
+                member.role.includes('Dév') ||
+                member.role.includes('Lead')
                   ? 'text-[#c62d6a]'
                   : 'text-white/80',
               ]"
@@ -159,10 +161,7 @@ function closeModal() {
         >
           <div class="flex items-center justify-between p-6 border-b border-white/10">
             <h2 class="text-2xl font-bold text-white">{{ selectedMember.name }}</h2>
-            <button
-              class="text-white/60 hover:text-white transition-colors"
-              @click="closeModal"
-            >
+            <button class="text-white/60 hover:text-white transition-colors" @click="closeModal">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   stroke-linecap="round"
@@ -215,7 +214,10 @@ function closeModal() {
               </div>
             </div>
 
-            <div v-if="selectedMember.email || selectedMember.phone || selectedMember.socialLinks" class="flex flex-wrap gap-4 pt-4 border-t border-white/10">
+            <div
+              v-if="selectedMember.email || selectedMember.phone || selectedMember.socialLinks"
+              class="flex flex-wrap gap-4 pt-4 border-t border-white/10"
+            >
               <a
                 v-if="selectedMember.email"
                 :href="`mailto:${selectedMember.email}`"
