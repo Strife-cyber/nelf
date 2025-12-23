@@ -42,14 +42,12 @@ function closeModal() {
 
 <template>
   <div class="py-24 bg-[#121226]" id="equipe">
-    <div class="layout-content-container max-w-300 mx-auto px-4 md:px-10">
+    <div class="layout-content-container max-w-300 mx-auto">
       <div class="text-center mb-16">
         <span class="text-[#c62d6a] font-bold tracking-widest uppercase text-sm mb-2 block">
           Le Cœur de NELF
         </span>
-        <h2 class="text-white text-4xl font-bold leading-tight">
-          Notre Équipe
-        </h2>
+        <h2 class="text-white text-4xl font-bold leading-tight">Notre Équipe</h2>
       </div>
 
       <div v-if="isLoading" class="flex items-center justify-center py-20">
@@ -81,7 +79,7 @@ function closeModal() {
             ]"
           ></div>
           <div
-            class="absolute bottom-0 left-0 w-full p-6 text-white transform translate-y-12 group-hover:translate-y-0 transition-transform duration-300"
+            class="absolute bottom-0 left-0 w-full p-6 text-white transform translate-y-35 group-hover:translate-y-0 transition-transform duration-300"
           >
             <h3 class="text-2xl font-bold">{{ member.name }}</h3>
             <p

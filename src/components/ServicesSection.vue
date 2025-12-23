@@ -27,7 +27,7 @@ const services = [
 
 <template>
   <div class="relative py-24 bg-[#121226]" id="services">
-    <div class="layout-content-container max-w-300 mx-auto px-4 md:px-10">
+    <div class="layout-content-container max-w-300 mx-auto">
       <div class="flex flex-col gap-4 mb-16 text-center">
         <h2 class="text-white text-4xl md:text-5xl font-bold tracking-tight">
           Ce que nous

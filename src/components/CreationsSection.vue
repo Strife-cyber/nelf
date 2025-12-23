@@ -177,8 +177,8 @@ function closeModal() {
 
 <template>
   <div class="py-24 bg-[#121226] overflow-hidden" id="creations">
-    <div class="layout-content-container max-w-350 mx-auto px-4 md:px-10 flex flex-col">
-      <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+    <div class="layout-content-container max-w-350 mx-auto flex flex-col">
+      <div class="flex flex-col items-center text-center mb-12 gap-6">
         <div>
           <h2 class="text-white text-4xl font-bold tracking-tight mb-2">
             Nos Créations
@@ -202,7 +202,7 @@ function closeModal() {
       </div>
       <div
         v-else-if="creations.length > 0"
-        class="flex overflow-x-auto gap-6 pb-12 snap-x snap-mandatory no-scrollbar px-4 -mx-4 md:px-0 md:mx-0"
+        class="flex overflow-x-auto gap-6 pb-12 snap-x snap-mandatory no-scrollbar"
       >
         <div
           v-for="creation in creations"
@@ -337,18 +337,19 @@ function closeModal() {
             </div>
 
             <!-- Image for non-video items -->
-            <div v-else class="mb-6">
+            <div v-else class="mb-6 flex justify-center">
               <img
                 :src="selectedItem.image"
                 :alt="selectedItem.title"
-                class="w-full rounded-xl max-h-96"
+                class="rounded-xl"
                 :class="[
-                  selectedItem.aspect === 'portrait' ? 'aspect-3/4 object-cover' : '',
-                  selectedItem.type === 'website'
-                    ? 'aspect-video object-cover object-top'
-                    : selectedItem.aspect === 'video'
-                      ? 'aspect-video object-cover'
-                      : '',
+                  selectedItem.type === 'flyer'
+                    ? 'max-w-full max-h-[70vh] object-contain'
+                    : selectedItem.type === 'website'
+                      ? 'w-full aspect-video object-cover object-top'
+                      : selectedItem.aspect === 'video'
+                        ? 'w-full aspect-video object-cover'
+                        : 'w-full max-h-[70vh] object-contain',
                 ]"
               />
             </div>

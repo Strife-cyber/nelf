@@ -4,7 +4,7 @@
 
 <template>
   <footer
-    class="bg-[#2b2d75] py-16 px-4 md:px-10 border-t border-white/5 text-white relative overflow-hidden"
+    class="bg-[#2b2d75] py-16 border-t border-white/5 text-white relative overflow-hidden"
   >
     <div
       class="absolute top-0 right-0 w-75 h-75 bg-primary/10 blur-[100px] rounded-full pointer-events-none"

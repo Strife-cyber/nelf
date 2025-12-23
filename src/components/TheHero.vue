@@ -29,7 +29,7 @@
 
     <!-- Contenu principal -->
     <div
-      class="layout-content-container relative z-10 flex flex-col items-center justify-center max-w-300 w-full px-4 md:px-10 text-center gap-8"
+      class="layout-content-container relative z-10 flex flex-col items-center justify-center max-w-300 w-full text-center gap-8"
     >
       <div
         class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-[#c62d6a] text-primary animate-float"

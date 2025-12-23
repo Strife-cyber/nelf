@@ -15,7 +15,7 @@
     ></div>
     <div class="absolute inset-0 bg-black/40"></div>
     <div
-      class="layout-content-container relative z-10 flex flex-col items-center text-center max-w-250 px-4 md:px-10"
+      class="layout-content-container relative z-10 flex flex-col items-center text-center max-w-250"
     >
       <div class="mb-8">
         <span

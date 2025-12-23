@@ -43,7 +43,7 @@ const values = [
       ></div>
     </div>
 
-    <div class="layout-content-container max-w-300 mx-auto px-4 md:px-10 relative z-10">
+    <div class="layout-content-container max-w-300 mx-auto relative z-10">
       <div class="flex flex-col md:flex-row items-end justify-between gap-8 mb-16">
         <div class="max-w-2xl">
           <h2
