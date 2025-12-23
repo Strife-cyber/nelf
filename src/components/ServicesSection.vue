@@ -26,10 +26,10 @@ const services = [
 </script>
 
 <template>
-  <div class="relative py-24 bg-white dark:bg-[#121226]" id="services">
+  <div class="relative py-24 bg-[#121226]" id="services">
     <div class="layout-content-container max-w-300 mx-auto px-4 md:px-10">
       <div class="flex flex-col gap-4 mb-16 text-center">
-        <h2 class="text-[#111714] dark:text-white text-4xl md:text-5xl font-bold tracking-tight">
+        <h2 class="text-white text-4xl md:text-5xl font-bold tracking-tight">
           Ce que nous
           <span class="text-[#c62d6a] relative inline-block">
             faisons
@@ -47,7 +47,7 @@ const services = [
             </svg>
           </span>
         </h2>
-        <p class="text-[#637588] dark:text-gray-400 text-lg max-w-2xl mx-auto">
+        <p class="text-gray-400 text-lg max-w-2xl mx-auto">
           Une expertise 360° pour concrétiser vos ambitions avec précision et audace.
         </p>
       </div>
@@ -55,7 +55,7 @@ const services = [
         <div
           v-for="service in services"
           :key="service.id"
-          class="group relative p-8 bg-[#1a1b41] dark:bg-accent/20 rounded-2xl overflow-hidden hover:bg-[#1a1b41]/30 dark:hover:bg-accent/40 transition-all duration-300 border border-transparent hover:border-primary/30 shadow-sm hover:shadow-xl hover:shadow-primary/10"
+          class="group relative p-8 bg-accent/20 rounded-2xl overflow-hidden hover:bg-accent/40 transition-all duration-300 border border-transparent hover:border-primary/30 shadow-sm hover:shadow-xl hover:shadow-primary/10"
         >
           <div
             class="absolute -right-10 -top-10 size-40 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"
@@ -68,11 +68,11 @@ const services = [
             </div>
             <div>
               <h3
-                class="text-2xl font-bold mb-3 text-[#111714] dark:text-white group-hover:text-primary transition-colors"
+                class="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors"
               >
                 {{ service.title }}
               </h3>
-              <p class="text-[#637588] dark:text-gray-300 leading-relaxed">
+              <p class="text-gray-300 leading-relaxed">
                 {{ service.description }}
               </p>
             </div>

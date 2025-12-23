@@ -48,7 +48,7 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="flex items-center justify-between whitespace-nowrap border-b border-solid bg-[#1a1b41] dark:border-white/10 backdrop-blur-md px-10 py-4 fixed top-0 w-full z-50 transition-all duration-300"
+    class="flex items-center justify-between whitespace-nowrap border-b border-solid bg-[#1a1b41] border-white/10 backdrop-blur-md px-10 py-4 fixed top-0 w-full z-50 transition-all duration-300"
   >
     <div
       class="flex items-center gap-3 text-white group cursor-pointer select-none"
@@ -78,31 +78,31 @@ onUnmounted(() => {
     <div class="hidden lg:flex flex-1 justify-center gap-8 items-center">
       <div class="flex items-center gap-8">
         <a
-          class="text-[#111714] dark:text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
+          class="text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
           href="#services"
         >
           Ce qu'on fais
         </a>
         <a
-          class="text-[#111714] dark:text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
+          class="text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
           href="#valeurs"
         >
           Ce qu'on apporte
         </a>
         <a
-          class="text-[#111714] dark:text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
+          class="text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
           href="#vision"
         >
           Notre vision
         </a>
         <a
-          class="text-[#111714] dark:text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
+          class="text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
           href="#creations"
         >
           Nos Créations
         </a>
         <a
-          class="text-[#111714] dark:text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
+          class="text-gray-200 text-sm font-medium leading-normal hover:text-primary transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full"
           href="#equipe"
         >
           Notre Équipe

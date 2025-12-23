@@ -32,7 +32,7 @@ const values = [
 </script>
 
 <template>
-  <div class="relative py-24 bg-white dark:bg-[#121226] overflow-hidden" id="valeurs">
+  <div class="relative py-24 bg-[#121226] overflow-hidden" id="valeurs">
     <!-- Effets de fond -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
       <div
@@ -47,16 +47,16 @@ const values = [
       <div class="flex flex-col md:flex-row items-end justify-between gap-8 mb-16">
         <div class="max-w-2xl">
           <h2
-            class="text-[#111714] dark:text-white text-4xl md:text-5xl font-bold tracking-tight mb-4"
+            class="text-white text-4xl md:text-5xl font-bold tracking-tight mb-4"
           >
             Ce qu'on <span class="text-primary text-[#c62d6a]">apporte</span>
           </h2>
-          <p class="text-[#637588] dark:text-gray-400 text-lg">
+          <p class="text-gray-400 text-lg">
             Plus qu'un prestataire, NELF est votre partenaire de croissance.
           </p>
         </div>
         <div
-          class="hidden md:block h-0.5 flex-1 bg-linear-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent mx-8 mb-4"
+          class="hidden md:block h-0.5 flex-1 bg-linear-to-r from-transparent via-gray-700 to-transparent mx-8 mb-4"
         ></div>
       </div>
 

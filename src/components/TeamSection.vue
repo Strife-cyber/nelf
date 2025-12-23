@@ -41,19 +41,19 @@ function closeModal() {
 </script>
 
 <template>
-  <div class="py-24 bg-white dark:bg-[#121226]" id="equipe">
+  <div class="py-24 bg-[#121226]" id="equipe">
     <div class="layout-content-container max-w-300 mx-auto px-4 md:px-10">
       <div class="text-center mb-16">
         <span class="text-[#c62d6a] font-bold tracking-widest uppercase text-sm mb-2 block">
           Le Cœur de NELF
         </span>
-        <h2 class="text-[#111714] dark:text-white text-4xl font-bold leading-tight">
+        <h2 class="text-white text-4xl font-bold leading-tight">
           Notre Équipe
         </h2>
       </div>
 
       <div v-if="isLoading" class="flex items-center justify-center py-20">
-        <div class="text-[#637588] dark:text-gray-400">Chargement de l'équipe...</div>
+        <div class="text-gray-400">Chargement de l'équipe...</div>
       </div>
       <div v-else-if="teamMembers.length > 0" class="flex flex-wrap justify-center gap-10">
         <div
@@ -146,7 +146,7 @@ function closeModal() {
           </div>
         </div>
       </div>
-      <div v-else class="text-center py-20 text-[#637588] dark:text-gray-400">
+      <div v-else class="text-center py-20 text-gray-400">
         Aucun membre d'équipe disponible pour le moment
       </div>
 

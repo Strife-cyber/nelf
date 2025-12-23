@@ -176,20 +176,20 @@ function closeModal() {
 </script>
 
 <template>
-  <div class="py-24 bg-white dark:bg-[#121226] overflow-hidden" id="creations">
+  <div class="py-24 bg-[#121226] overflow-hidden" id="creations">
     <div class="layout-content-container max-w-350 mx-auto px-4 md:px-10 flex flex-col">
       <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
         <div>
-          <h2 class="text-[#111714] dark:text-white text-4xl font-bold tracking-tight mb-2">
+          <h2 class="text-white text-4xl font-bold tracking-tight mb-2">
             Nos Créations
           </h2>
-          <p class="text-[#637588] dark:text-gray-400 text-lg">
+          <p class="text-gray-400 text-lg">
             Découvrez nos réalisations récentes en mode "Showroom".
           </p>
         </div>
         <div class="flex gap-2">
           <span
-            class="text-sm text-gray-500 dark:text-gray-400 font-medium mr-2 self-center hidden md:block"
+            class="text-sm text-gray-400 font-medium mr-2 self-center hidden md:block"
           >
             Glisser pour découvrir
           </span>
@@ -198,7 +198,7 @@ function closeModal() {
       </div>
 
       <div v-if="isLoading" class="flex items-center justify-center py-20">
-        <div class="text-[#637588] dark:text-gray-400">Chargement des créations...</div>
+        <div class="text-gray-400">Chargement des créations...</div>
       </div>
       <div
         v-else-if="creations.length > 0"
@@ -295,7 +295,7 @@ function closeModal() {
           </div>
         </div>
       </div>
-      <div v-else class="text-center py-20 text-[#637588] dark:text-gray-400">
+      <div v-else class="text-center py-20 text-gray-400">
         Aucune création disponible pour le moment
       </div>
 
