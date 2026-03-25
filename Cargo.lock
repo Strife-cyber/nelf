@@ -1317,6 +1317,7 @@ dependencies = [
 name = "nelf"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "dotenvy",
  "sea-orm",
  "serde",
