@@ -1,20 +1,120 @@
 ---
 import '../styles/global.css';
-import Layout from '../layouts/Layout.astro';
+import Layout from '@/layouts/Layout.astro';
+import LogoLoop from '@/components/LogoLoop';
+import nelfLogo from '@/assets/nelf-logo.jpeg';
+import LaserFlow from '@/components/LaserFlow';
+import SplashCursor from '@/components/SplashCursor';
+import braidsbookLogo from '@/assets/logos/braidsbook-logo.png';
+
+type LogoItem = {
+	src: string,
+	alt: string,
+	href: string
+};
+
+const techLogos: LogoItem[] = [
+	{
+		src: braidsbookLogo.src,
+		alt: "Braidsbook Logo",
+		href: "https://braidsbook.com/images/braidsbook-logo.png"
+	}
+];
 ---
 
 <Layout>
-	<header class="flex justify-between items-center p-4">
-		<div>Place the logo here</div>
+	<div class="relative lg:justify-center bg-black lg:p-8 w-screen min-h-screen overflow-hidden">
+		<div class="z-0 absolute inset-0 opacity-100 w-full h-full pointer-events-none">
+			<SplashCursor
+				SIM_RESOLUTION={128}
+				DYE_RESOLUTION={1440}
+				DENSITY_DISSIPATION={3.5}
+				VELOCITY_DISSIPATION={2}
+				PRESSURE={0.1}
+				CURL={3}
+				SPLAT_RADIUS={0.2}
+				SPLAT_FORCE={6000}
+				COLOR_UPDATE_SPEED={10}
+				client:load
+			/>
+		</div>
+		<div class="z-0 absolute inset-0 opacity-100 w-full h-full pointer-events-none">
+			<LaserFlow
+				color="#FF79C6"
+				wispDensity={1}
+				flowSpeed={0.35}
+				verticalSizing={2}
+				horizontalSizing={0.5}
+				fogIntensity={0.45}
+				fogScale={0.3}
+				wispSpeed={15}
+				wispIntensity={5}
+				flowStrength={0.25}
+				decay={1.1}
+				horizontalBeamOffset={0}
+				verticalBeamOffset={-0.5}
+				client:load
+			/>
+		</div>
+		<header class="flex justify-between items-center">
+			<a href="/">
+				<img src={nelfLogo.src} alt="Nelf Logo" class="w-30 h-15" />
+			</a>
 
-		<nav>
-			<a href="">nav-1</a>
-			<a href="">nav-2</a>
-			<a href="">nav-3</a>
-			<a href="">nav-4</a>
-		</nav>
+			<nav class="space-x-4 text-white">
+				<a href="#craft" class="hover:text-nelf-pink">Our craft</a>
+				<a href="#contribution" class="hover:text-nelf-pink">Our contribution</a>
+				<a href="#vision" class="hover:text-nelf-pink">Looking forward</a>
+				<a href="#gallery" class="hover:text-nelf-pink">The gallery</a>
+				<a href="#team" class="hover:text-nelf-pink">Meet the creators</a>
+			</nav>
 
-		<nav>actions</nav>
-	</header>
+			<nav class="text-white">
+				<button class="hover:bg-white px-6 py-2.5 border border-white/70 rounded-md font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
+					Let's talk
+				</button>
+			</nav>
+		</header>
+		<main class="z-10 relative flex justify-center items-center opacity-100 starting:opacity-0 w-full transition-opacity duration-750 lg:grow">
+			<section id="hero">
+				<div class="flex flex-col justify-center items-center mt-10">
+					<div class="flex items-center space-x-3 bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-md px-4 py-2 border border-white/20 rounded-full w-fit">
+						<span class="inline-block bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)] rounded-full w-1.5 h-1.5"></span>
+						<p class="font-light text-white/80 text-xs uppercase tracking-widest">Votre troisieme main</p>
+					</div>
+					<div class="mt-4"></div>
+					<h1 class="text-white text-8xl text-center">Build a personal brand <br/> That opens doors</h1>
+					<div class="mt-8"></div>
+					<p class="font-light text-[#555555] text-xl text-center">Create professional products that showcases your business brand, <br/> your vision, and helps you capture real growth</p>
+					<div class="space-x-4 mt-12">
+						<button class="bg-white px-6 py-2.5 border border-white/70 rounded-full font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
+							Start Creating
+						</button>
+						<button class="bg-[#333333] px-6 py-2.5 border border-white/70 rounded-full font-medium text-white transition-all hover:-translate-y-0.5 duration-300 transform">
+							Browse Creations
+						</button>
+					</div>
+					<!--<div class="mt-12"></div>
+					<LogoLoop
+						logos={techLogos}
+						speed={100}
+						direction="left"
+						logoHeight={60}
+						gap={60}
+						hoverSpeed={0}
+						scaleOnHover
+						fadeOut
+						fadeOutColor="#ffffff"
+						ariaLabel="Technology partners"
+					/>-->
+				</div>
+			</section>
+			<section id="craft"></section>
+			<section id="contribution"></section>
+			<section id="vision"></section>
+			<section id="gallery"></section>
+			<section id="team"></section>
+		</main>
+	</div>
 </Layout>
 
