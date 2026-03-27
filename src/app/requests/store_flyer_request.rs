@@ -1,9 +1,10 @@
 use serde::Deserialize;
 use sea_orm::{Set, NotSet, IntoActiveModel};
+use utoipa::ToSchema;
 
 use crate::app::entities::flyers;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct StoreFlyerRequest {
     pub name: String,
     pub url: String,

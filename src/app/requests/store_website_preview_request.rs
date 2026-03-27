@@ -1,9 +1,10 @@
 use serde::Deserialize;
 use sea_orm::{Set, NotSet, IntoActiveModel};
+use utoipa::ToSchema;
 
 use crate::app::entities::website_previews;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct StoreWebsitePreviewRequest {
     pub url: String,
     pub title: Option<String>,

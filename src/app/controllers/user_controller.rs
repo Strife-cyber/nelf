@@ -12,6 +12,70 @@ use crate::{
 
 pub struct UserController;
 
+#[utoipa::path(
+    get,
+    path = "/api/users",
+    responses(
+        (status = 200, description = "List all users", body = [users::Model])
+    )
+)]
+pub async fn list_users(
+    state: Extension<Arc<AppState>>
+) -> Result<Json<Vec<users::Model>>, StatusCode> {
+    UserController::list(state).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/users",
+    request_body = StoreUserRequest,
+    responses(
+        (status = 201, description = "User created successfully", body = users::Model)
+    )
+)]
+pub async fn create_user(
+    state: Extension<Arc<AppState>>,
+    payload: Json<StoreUserRequest>,
+) -> Result<Json<users::Model>, StatusCode> {
+    UserController::create(state, payload).await
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/users/{id}",
+    params(
+        ("id" = i32, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User found", body = users::Model),
+        (status = 404, description = "User not found")
+    )
+)]
+pub async fn find_user(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+) -> Result<Json<users::Model>, StatusCode> {
+    UserController::find(state, id).await
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/users/{id}",
+    params(
+        ("id" = i32, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User deleted successfully"),
+        (status = 404, description = "User not found")
+    )
+)]
+pub async fn delete_user(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+) -> Result<Json<&'static str>, StatusCode> {
+    UserController::delete(state, id).await
+}
+
 impl UserController {
     pub async fn list(
         Extension(state): Extension<Arc<AppState>>

@@ -12,6 +12,70 @@ use crate::{
 
 pub struct FlyerController;
 
+#[utoipa::path(
+    get,
+    path = "/api/flyers",
+    responses(
+        (status = 200, description = "List all flyers", body = [flyers::Model])
+    )
+)]
+pub async fn list_flyers(
+    state: Extension<Arc<AppState>>
+) -> Result<Json<Vec<flyers::Model>>, StatusCode> {
+    FlyerController::list(state).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/flyers",
+    request_body = StoreFlyerRequest,
+    responses(
+        (status = 201, description = "Flyer created successfully", body = flyers::Model)
+    )
+)]
+pub async fn create_flyer(
+    state: Extension<Arc<AppState>>,
+    payload: Json<StoreFlyerRequest>,
+) -> Result<Json<flyers::Model>, StatusCode> {
+    FlyerController::create(state, payload).await
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/flyers/{id}",
+    params(
+        ("id" = i32, Path, description = "Flyer ID")
+    ),
+    responses(
+        (status = 200, description = "Flyer found", body = flyers::Model),
+        (status = 404, description = "Flyer not found")
+    )
+)]
+pub async fn find_flyer(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+) -> Result<Json<flyers::Model>, StatusCode> {
+    FlyerController::find(state, id).await
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/flyers/{id}",
+    params(
+        ("id" = i32, Path, description = "Flyer ID")
+    ),
+    responses(
+        (status = 200, description = "Flyer deleted successfully"),
+        (status = 404, description = "Flyer not found")
+    )
+)]
+pub async fn delete_flyer(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+) -> Result<Json<&'static str>, StatusCode> {
+    FlyerController::delete(state, id).await
+}
+
 impl FlyerController {
     pub async fn list(
         Extension(state): Extension<Arc<AppState>>

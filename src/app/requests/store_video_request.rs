@@ -1,10 +1,11 @@
 use serde::Deserialize;
 use sea_orm::{Set, NotSet, IntoActiveModel};
+use utoipa::ToSchema;
 
 // Make sure to adjust this import to point to your actual videos entity
 use crate::app::entities::videos;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct StoreVideoRequest {
     pub name: String,
     pub url: String,
