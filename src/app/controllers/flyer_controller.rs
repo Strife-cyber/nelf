@@ -2,6 +2,9 @@ use std::sync::Arc;
 use axum::extract::Multipart;
 use sea_orm::IntoActiveModel;
 use axum::{Extension, Json, http::StatusCode};
+use aws_sdk_s3::primitives::ByteStream;
+use futures_util::StreamExt;
+use std::io::Write;
 
 use crate::{
     AppState,
@@ -95,14 +98,29 @@ impl FlyerController {
     ) -> Result<Json<flyers::Model>, StatusCode> {
         let mut parsed_data = ParsedFlyerData::default();
 
-        while let Ok(Some(field)) = multipart.next_field().await {
+        while let Ok(Some(mut field)) = multipart.next_field().await {
             let field_name = field.name().unwrap_or("").to_string();
 
             if field_name == "file" {
                 parsed_data.file_name = field.file_name().map(|s| s.to_string());
-                if let Ok(bytes) = field.bytes().await {
-                    parsed_data.file_bytes = Some(bytes.to_vec());
+                
+                // To avoid OOM and satisfy AWS SDK's 'static + Sync requirements,
+                // we stream the multipart field to a temporary file on disk.
+                let mut temp_file = tempfile::NamedTempFile::new()
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+                while let Some(chunk) = field.next().await {
+                    let data = chunk.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                    temp_file.write_all(&data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
                 }
+
+                // Convert the temp file into a ByteStream. 
+                // from_path is efficient and allows the SDK to retry by reopening the file.
+                let stream = ByteStream::from_path(temp_file.path())
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                
+                parsed_data.file_stream = Some(stream);
             } else if let Ok(text) = field.text().await {
                 match field_name.as_str() {
                     "name" => parsed_data.name = Some(text),

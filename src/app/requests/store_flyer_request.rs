@@ -1,5 +1,6 @@
 use utoipa::ToSchema;
-use sea_orm::{Set, NotSet, IntoActiveModel};
+use sea_orm::{Set, NotSet};
+use aws_sdk_s3::primitives::ByteStream;
 
 use crate::app::entities::flyers;
 
@@ -16,15 +17,28 @@ pub struct StoreFlyerRequest {
     pub is_active: Option<bool>
 }
 
-#[derive(Default)]
 pub struct ParsedFlyerData {
     pub name: Option<String>,
     pub event_title: Option<String>,
     pub short_info: Option<String>,
     pub description: Option<String>,
     pub is_active: Option<bool>,
-    pub file_bytes: Option<Vec<u8>>,
+    pub file_stream: Option<ByteStream>,
     pub file_name: Option<String>,
+}
+
+impl Default for ParsedFlyerData {
+    fn default() -> Self {
+        Self {
+            name: None,
+            event_title: None,
+            short_info: None,
+            description: None,
+            is_active: None,
+            file_stream: None,
+            file_name: None,
+        }
+    }
 }
 
 impl ParsedFlyerData {
@@ -53,20 +67,3 @@ impl ParsedFlyerData {
         }
     }
 }
-
-/*impl IntoActiveModel<flyers::ActiveModel> for StoreFlyerRequest {
-    fn into_active_model(self) -> flyers::ActiveModel {
-        flyers::ActiveModel {
-            name: Set(self.name),
-            url: Set(self.url),
-            event_title: Set(self.event_title),
-            short_info: Set(self.short_info),
-            description: Set(self.description),
-            is_active: match self.is_active {
-                Some(active) => Set(active),
-                None => NotSet,
-            },
-            ..Default::default()
-        }
-    }
-}*/

@@ -1,14 +1,53 @@
+use std::time::SystemTime;
 use async_trait::async_trait;
 use super::crud::CrudService;
 
 use super::super::entities::users as User;
+use super::super::requests::store_user_request::ParsedUserData;
 
 pub struct UserService;
 
 #[async_trait]
 impl CrudService<User::Entity> for UserService {}
 
-impl UserService {}
+impl UserService {
+    /// Creates a new user record in the database after optionally uploading an avatar to S3.
+    pub async fn create_with_file(
+        db: &sea_orm::DatabaseConnection,
+        s3_client: &aws_sdk_s3::Client,
+        mut parsed_data: ParsedUserData
+    ) -> anyhow::Result<User::Model> {
+        let name = parsed_data.name.clone().ok_or_else(|| anyhow::anyhow!("Name is required"))?;
+        let email = parsed_data.email.clone().ok_or_else(|| anyhow::anyhow!("Email is required"))?;
+        
+        let mut uploaded_avatar_url = None;
+
+        if let Some(avatar_stream) = parsed_data.avatar_stream.take() {
+            let original_file_name = parsed_data.avatar_name.clone().unwrap_or_else(|| "unnamed_avatar".to_string());
+
+            let timestamp = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_millis();
+
+            let file_name = format!("{}_{}", timestamp, original_file_name.replace(" ", "_"));
+
+            let s3_key = format!("users/avatars/{}", file_name);
+            crate::config::filesystems::upload(s3_client, &s3_key, avatar_stream).await?;
+
+            let s3_url = std::env::var("AWS_URL").unwrap_or_else(|_| "".to_string());
+            let bucket = std::env::var("AWS_BUCKET").unwrap_or_else(|_| "".to_string());
+
+            uploaded_avatar_url = Some(format!("{}/{}/{}", s3_url, bucket, s3_key));
+        }
+
+        let active_model = parsed_data.into_active_model(name, email, uploaded_avatar_url);
+
+        let user = Self::create(db, active_model).await?;
+
+        Ok(user)
+    }
+}
 
 #[cfg(test)]
 mod tests {

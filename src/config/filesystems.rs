@@ -1,5 +1,6 @@
 use aws_sdk_s3 as s3;
 use aws_config::BehaviorVersion;
+use s3::primitives::ByteStream;
 
 pub async fn connect() -> Result<s3::Client, anyhow::Error> {
     dotenvy::dotenv().ok();
@@ -30,10 +31,12 @@ pub async fn connect() -> Result<s3::Client, anyhow::Error> {
     Ok(client)
 }
 
+/// Uploads a stream of bytes to S3.
+/// This allows for memory-efficient uploads of large files.
 pub async fn upload(
     client: &s3::Client,
     key: &str,
-    content: Vec<u8>,
+    content: ByteStream,
 ) -> Result<(), anyhow::Error> {
     dotenvy::dotenv().ok();
 
@@ -45,7 +48,7 @@ pub async fn upload(
         .put_object()
         .bucket(bucket)
         .key(key)
-        .body(s3::primitives::ByteStream::from(content))
+        .body(content)
         .send()
         .await?;
 
@@ -115,7 +118,7 @@ mod tests {
         print!("{:?}", client.config());
 
         // upload
-        let up = upload(&client, key, content.clone()).await;
+        let up = upload(&client, key, ByteStream::from(content.clone())).await;
 
         if let Err(e) = up {
             panic!("Upload failed: {:?}", e);

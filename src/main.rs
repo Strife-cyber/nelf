@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use axum::{Extension, Json, http::StatusCode};
+use axum::Extension;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use crate::state::AppState;
@@ -64,6 +64,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let app = axum::Router::new()
         .nest("/api", routes::api::api_routes())
         .merge(swagger_router)
+        .layer(axum::extract::DefaultBodyLimit::disable())
         .layer(Extension(state));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;

@@ -11,16 +11,25 @@ pub struct FlyerService;
 impl CrudService<Flyer::Entity> for FlyerService {}
 
 impl FlyerService {
+    /// Creates a new flyer record in the database after uploading its file to S3.
+    /// 
+    /// # Arguments
+    /// * `db` - Database connection reference
+    /// * `s3_client` - AWS S3 client for file storage
+    /// * `parsed_data` - Data extracted from the multipart form request
     pub async fn create_with_file(
         db: &sea_orm::DatabaseConnection,
         s3_client: &aws_sdk_s3::Client,
-        parsed_data: ParsedFlyerData
+        mut parsed_data: ParsedFlyerData
     ) -> anyhow::Result<Flyer::Model> {
         let name = parsed_data.name.clone().ok_or_else(|| anyhow::anyhow!("Name is required"))?;
-        let file_bytes = parsed_data.file_bytes.clone().ok_or_else(|| anyhow::anyhow!("File is required"))?;
+        
+        // Use .take() to move the stream out of parsed_data without moving the whole struct
+        let file_stream = parsed_data.file_stream.take().ok_or_else(|| anyhow::anyhow!("File is required"))?;
 
         let original_file_name = parsed_data.file_name.clone().unwrap_or_else(|| "unnamed_upload".to_string());
 
+        // Generate a unique filename using timestamp to avoid collisions in S3
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("Time went backwards")
@@ -28,16 +37,20 @@ impl FlyerService {
 
         let file_name = format!("{}_{}", timestamp, original_file_name.replace(" ", "_"));
 
+        // Upload to S3 under the 'flyers/' prefix using streaming ByteStream
         let s3_key = format!("flyers/{}", file_name);
-        crate::config::filesystems::upload(s3_client, &s3_key, file_bytes).await?;
+        crate::config::filesystems::upload(s3_client, &s3_key, file_stream).await?;
 
+        // Construct the full public URL for the uploaded file
         let url = std::env::var("AWS_URL").unwrap_or_else(|_| "".to_string());
         let bucket = std::env::var("AWS_BUCKET").unwrap_or_else(|_| "".to_string());
 
         let s3_url = format!("{}/{}/{}", url, bucket, s3_key);
 
+        // Convert the remaining parsed data and the new S3 URL into a SeaORM ActiveModel
         let active_model = parsed_data.into_active_model(name, s3_url);
 
+        // Persist to the database
         let flyer = Self::create(db, active_model).await?;
 
         Ok(flyer)

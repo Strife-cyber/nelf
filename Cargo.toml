@@ -6,11 +6,14 @@ edition = "2024"
 [dependencies]
 dotenvy = "0.15.7"
 anyhow = "1.0.102"
+futures-util = "0.3"
 aws-config = "1.8.15"
 utoipa-axum = "0.2.0"
 async-trait = "0.1.89"
 tokio = { version = "1.50.0", features = ["full"] }
 axum = { version = "0.8.8", features = ["multipart"] }
+http-body = "1.0"
+tempfile = "3.17"
 serde = { version = "1.0.228", features = ["derive"] }
 utoipa = { version = "5.3.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.0", features = ["axum"] }

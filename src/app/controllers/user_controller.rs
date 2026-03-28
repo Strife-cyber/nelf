@@ -1,13 +1,17 @@
 use std::sync::Arc;
-use axum::{Extension, Json, http::StatusCode};
+use axum::extract::Multipart;
 use sea_orm::IntoActiveModel;
+use axum::{Extension, Json, http::StatusCode};
+use aws_sdk_s3::primitives::ByteStream;
+use futures_util::StreamExt;
+use std::io::Write;
 
 use crate::{
     AppState,
     app::entities::users,
     app::services::crud::CrudService,
     app::services::user_service::UserService,
-    app::requests::store_user_request::StoreUserRequest
+    app::requests::store_user_request::{StoreUserRequest, ParsedUserData}
 };
 
 pub struct UserController;
@@ -28,16 +32,16 @@ pub async fn list_users(
 #[utoipa::path(
     post,
     path = "/api/users",
-    request_body = StoreUserRequest,
+    request_body(content = StoreUserRequest, content_type="multipart/form-data"),
     responses(
         (status = 201, description = "User created successfully", body = users::Model)
     )
 )]
 pub async fn create_user(
     state: Extension<Arc<AppState>>,
-    payload: Json<StoreUserRequest>,
+    multipart: Multipart,
 ) -> Result<Json<users::Model>, StatusCode> {
-    UserController::create(state, payload).await
+    UserController::create(state, multipart).await
 }
 
 #[utoipa::path(
@@ -89,13 +93,53 @@ impl UserController {
 
     pub async fn create(
         Extension(state): Extension<Arc<AppState>>,
-        Json(payload): Json<StoreUserRequest>,
+        mut multipart: Multipart
     ) -> Result<Json<users::Model>, StatusCode> {
-        let active_model = payload.into_active_model();
+        let mut parsed_data = ParsedUserData::default();
 
-        let user = UserService::create(&state.db, active_model)
+        while let Ok(Some(mut field)) = multipart.next_field().await {
+            let field_name = field.name().unwrap_or("").to_string();
+
+            if field_name == "avatar" {
+                parsed_data.avatar_name = field.file_name().map(|s| s.to_string());
+                
+                let mut temp_file = tempfile::NamedTempFile::new()
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+                while let Some(chunk) = field.next().await {
+                    let data = chunk.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                    temp_file.write_all(&data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                }
+
+                let stream = ByteStream::from_path(temp_file.path())
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                
+                parsed_data.avatar_stream = Some(stream);
+            } else if let Ok(text) = field.text().await {
+                match field_name.as_str() {
+                    "name" => parsed_data.name = Some(text),
+                    "email" => parsed_data.email = Some(text),
+                    "phone" => parsed_data.phone = Some(text),
+                    "role" => parsed_data.role = Some(text),
+                    "description" => parsed_data.description = Some(text),
+                    "initials" => parsed_data.initials = Some(text),
+                    "is_active" => parsed_data.is_active = text.parse().ok(),
+                    "skills" => {
+                        let skills: Vec<String> = text.split(',').map(|s| s.trim().to_string()).collect();
+                        parsed_data.skills = Some(skills);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let user = UserService::create_with_file(&state.db, &state.s3_client, parsed_data)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(|e| {
+                println!("Error creating user: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
 
         Ok(Json(user))
     }

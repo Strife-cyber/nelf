@@ -1,14 +1,53 @@
+use std::time::SystemTime;
 use async_trait::async_trait;
 use super::crud::CrudService;
 
 use super::super::entities::videos as Video;
+use super::super::requests::store_video_request::ParsedVideoData;
 
 pub struct VideoService;
 
 #[async_trait]
 impl CrudService<Video::Entity> for VideoService {}
 
-impl VideoService {}
+impl VideoService {
+    /// Creates a new video record in the database after optionally uploading a thumbnail to S3.
+    pub async fn create_with_file(
+        db: &sea_orm::DatabaseConnection,
+        s3_client: &aws_sdk_s3::Client,
+        mut parsed_data: ParsedVideoData
+    ) -> anyhow::Result<Video::Model> {
+        let name = parsed_data.name.clone().ok_or_else(|| anyhow::anyhow!("Name is required"))?;
+        let url = parsed_data.url.clone().ok_or_else(|| anyhow::anyhow!("URL is required"))?;
+        
+        let mut uploaded_thumbnail_url = None;
+
+        if let Some(thumbnail_stream) = parsed_data.thumbnail_stream.take() {
+            let original_file_name = parsed_data.thumbnail_name.clone().unwrap_or_else(|| "unnamed_thumbnail".to_string());
+
+            let timestamp = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_millis();
+
+            let file_name = format!("{}_{}", timestamp, original_file_name.replace(" ", "_"));
+
+            let s3_key = format!("videos/thumbnails/{}", file_name);
+            crate::config::filesystems::upload(s3_client, &s3_key, thumbnail_stream).await?;
+
+            let s3_url = std::env::var("AWS_URL").unwrap_or_else(|_| "".to_string());
+            let bucket = std::env::var("AWS_BUCKET").unwrap_or_else(|_| "".to_string());
+
+            uploaded_thumbnail_url = Some(format!("{}/{}/{}", s3_url, bucket, s3_key));
+        }
+
+        let active_model = parsed_data.into_active_model(name, url, uploaded_thumbnail_url);
+
+        let video = Self::create(db, active_model).await?;
+
+        Ok(video)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -77,4 +116,3 @@ mod tests {
         assert!(check_deleted.is_none(), "Video should be deleted!");
     }
 }
-
