@@ -157,8 +157,8 @@ const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black', 
           background: `radial-gradient(circle, ${gradientColor} 0%, transparent 100%)`
         }}
       >
-        <div className={cn('z-[4]', 'absolute', 'inset-0', 'bg-[length:250px]', 'pointer-events-none')}></div>
-        <div className={cn('z-[2]', 'relative', 'flex-none', 'gap-4', 'grid', 'grid-cols-1', 'grid-rows-4', 'w-[150vw]', 'h-[150vh]', 'rotate-[-15deg]', 'origin-center')}>
+        <div className={cn('z-4', 'absolute', 'inset-0', 'bg-size-[250px]', 'pointer-events-none')}></div>
+        <div className={cn('z-2', 'relative', 'flex-none', 'gap-4', 'grid', 'grid-cols-1', 'grid-rows-4', 'w-[150vw]', 'h-[150vh]', 'rotate-[-15deg]', 'origin-center')}>
           {Array.from({ length: 4 }, (_, rowIndex) => (
             <div
               key={rowIndex}
