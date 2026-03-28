@@ -103,6 +103,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_upload_and_download() {
+        unsafe {
+            std::env::set_var("AWS_BUCKET", "test-bucket");
+        }
+
         let client = connect().await.unwrap();
 
         let key = "test.txt";
