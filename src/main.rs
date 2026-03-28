@@ -7,11 +7,15 @@ use crate::state::AppState;
 pub mod config;
 pub mod routes;
 pub mod app;
+pub mod middleware;
+#[cfg(test)]
+mod gen_hash;
 mod state;
 
 #[derive(OpenApi)]
 #[openapi(
     paths(
+        crate::app::controllers::auth_controller::login,
         crate::app::controllers::video_controller::list_videos,
         crate::app::controllers::video_controller::create_video,
         crate::app::controllers::video_controller::find_video,
@@ -31,6 +35,8 @@ mod state;
     ),
     components(
         schemas(
+            crate::app::controllers::auth_controller::LoginRequest,
+            crate::app::controllers::auth_controller::AuthResponse,
             crate::app::entities::videos::Model,
             crate::app::requests::store_video_request::StoreVideoRequest,
             crate::app::entities::flyers::Model,

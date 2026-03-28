@@ -4,6 +4,13 @@ use crate::app::controllers::video_controller;
 use crate::app::controllers::flyer_controller;
 use crate::app::controllers::user_controller;
 use crate::app::controllers::website_preview_controller;
+use crate::app::controllers::auth_controller;
+use crate::middleware::auth::auth_middleware;
+
+pub fn auth_routes() -> Router {
+    Router::new()
+        .route("/auth/login", post(auth_controller::login))
+}
 
 pub fn video_routes() -> Router {
     Router::new()
@@ -39,8 +46,13 @@ pub fn website_preview_routes() -> Router {
 
 pub fn api_routes() -> Router {
     Router::new()
-        .merge(video_routes())
-        .merge(flyer_routes())
-        .merge(user_routes())
-        .merge(website_preview_routes())
+        .merge(auth_routes())
+        .merge(
+            Router::new()
+                .merge(video_routes())
+                .merge(flyer_routes())
+                .merge(user_routes())
+                .merge(website_preview_routes())
+                .layer(axum::middleware::from_fn(auth_middleware))
+        )
 }

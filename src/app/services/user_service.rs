@@ -1,6 +1,7 @@
 use std::time::SystemTime;
 use async_trait::async_trait;
 use super::crud::CrudService;
+use sea_orm::{DatabaseConnection, DbErr, entity::*, query::*};
 
 use super::super::entities::users as User;
 use super::super::requests::store_user_request::ParsedUserData;
@@ -11,6 +12,13 @@ pub struct UserService;
 impl CrudService<User::Entity> for UserService {}
 
 impl UserService {
+    pub async fn find_by_email(db: &DatabaseConnection, email: &str) -> Result<Option<User::Model>, DbErr> {
+        User::Entity::find()
+            .filter(User::Column::Email.eq(email))
+            .one(db)
+            .await
+    }
+
     /// Creates a new user record in the database after optionally uploading an avatar to S3.
     pub async fn create_with_file(
         db: &sea_orm::DatabaseConnection,

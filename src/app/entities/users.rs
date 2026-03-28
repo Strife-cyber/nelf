@@ -21,6 +21,8 @@ pub struct Model {
     pub initials: Option<String>,
     pub skills: Option<Vec<String>>,
     pub is_active: bool,
+    #[serde(skip_serializing)]
+    pub password_hash: String,
     #[schema(value_type = String)]
     pub created_at: DateTimeWithTimeZone,
     #[schema(value_type = String)]
