@@ -1,2 +1,2 @@
 pub mod database;
-mod filesystems;
+pub mod filesystems;
