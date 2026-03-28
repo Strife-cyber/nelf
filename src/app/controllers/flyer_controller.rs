@@ -11,9 +11,8 @@ use crate::{
     app::entities::flyers,
     app::services::crud::CrudService,
     app::services::flyer_service::FlyerService,
-    app::requests::store_flyer_request::StoreFlyerRequest
+    app::requests::store_flyer_request::{StoreFlyerRequest, UpdateFlyerRequest, ParsedFlyerData}
 };
-use crate::app::requests::store_flyer_request::ParsedFlyerData;
 
 pub struct FlyerController;
 
@@ -64,6 +63,26 @@ pub async fn find_flyer(
 }
 
 #[utoipa::path(
+    put,
+    path = "/api/flyers/{id}",
+    params(
+        ("id" = i32, Path, description = "Flyer ID")
+    ),
+    request_body(content = UpdateFlyerRequest, content_type="multipart/form-data"),
+    responses(
+        (status = 200, description = "Flyer updated successfully", body = flyers::Model),
+        (status = 404, description = "Flyer not found")
+    )
+)]
+pub async fn update_flyer(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+    multipart: Multipart,
+) -> Result<Json<flyers::Model>, StatusCode> {
+    FlyerController::update(state, id, multipart).await
+}
+
+#[utoipa::path(
     delete,
     path = "/api/flyers/{id}",
     params(
@@ -96,6 +115,36 @@ impl FlyerController {
         Extension(state): Extension<Arc<AppState>>,
         mut multipart: Multipart
     ) -> Result<Json<flyers::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let flyer = FlyerService::create_with_file(&state.db, &state.s3_client, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error creating flyer: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(flyer))
+    }
+
+    pub async fn update(
+        Extension(state): Extension<Arc<AppState>>,
+        axum::extract::Path(id): axum::extract::Path<i32>,
+        mut multipart: Multipart
+    ) -> Result<Json<flyers::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let flyer = FlyerService::update_with_file(&state.db, &state.s3_client, id, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error updating flyer: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(flyer))
+    }
+
+    async fn parse_multipart(multipart: &mut Multipart) -> Result<ParsedFlyerData, StatusCode> {
         let mut parsed_data = ParsedFlyerData::default();
 
         while let Ok(Some(mut field)) = multipart.next_field().await {
@@ -104,8 +153,6 @@ impl FlyerController {
             if field_name == "file" {
                 parsed_data.file_name = field.file_name().map(|s| s.to_string());
                 
-                // To avoid OOM and satisfy AWS SDK's 'static + Sync requirements,
-                // we stream the multipart field to a temporary file on disk.
                 let mut temp_file = tempfile::NamedTempFile::new()
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -114,8 +161,6 @@ impl FlyerController {
                     temp_file.write_all(&data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
                 }
 
-                // Convert the temp file into a ByteStream. 
-                // from_path is efficient and allows the SDK to retry by reopening the file.
                 let stream = ByteStream::from_path(temp_file.path())
                     .await
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -132,15 +177,7 @@ impl FlyerController {
                 }
             }
         }
-
-        let flyer = FlyerService::create_with_file(&state.db, &state.s3_client, parsed_data)
-            .await
-            .map_err(|e| {
-                println!("Error creating flyer: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-
-        Ok(Json(flyer))
+        Ok(parsed_data)
     }
 
     pub async fn find(

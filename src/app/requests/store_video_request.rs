@@ -19,6 +19,20 @@ pub struct StoreVideoRequest {
     pub is_active: Option<bool>
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateVideoRequest {
+    pub name: Option<String>,
+    pub url: Option<String>,
+    pub event_title: Option<Option<String>>,
+    pub short_info: Option<Option<String>>,
+    pub description: Option<Option<String>>,
+    
+    #[schema(value_type = Option<String>, format = Binary)]
+    pub thumbnail: Option<Vec<u8>>,
+    
+    pub is_active: Option<bool>
+}
+
 pub struct ParsedVideoData {
     pub name: Option<String>,
     pub url: Option<String>,
@@ -72,6 +86,21 @@ impl ParsedVideoData {
             },
             ..Default::default()
         }
+    }
+
+    pub fn update_active_model(self, mut active_model: videos::ActiveModel, uploaded_thumbnail_url: Option<String>) -> videos::ActiveModel {
+        if let Some(val) = self.name { active_model.name = Set(val); }
+        if let Some(val) = self.url { active_model.url = Set(val); }
+        if let Some(val) = self.event_title { active_model.event_title = Set(Some(val)); }
+        if let Some(val) = self.short_info { active_model.short_info = Set(Some(val)); }
+        if let Some(val) = self.description { active_model.description = Set(Some(val)); }
+        if let Some(val) = self.is_active { active_model.is_active = Set(val); }
+        
+        if let Some(val) = uploaded_thumbnail_url {
+            active_model.thumbnail_url = Set(Some(val));
+        }
+        
+        active_model
     }
 }
 

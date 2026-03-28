@@ -20,6 +20,21 @@ pub struct StoreWebsitePreviewRequest {
     pub is_active: Option<bool>
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateWebsitePreviewRequest {
+    pub url: Option<String>,
+    pub title: Option<Option<String>>,
+    pub description: Option<Option<String>>,
+    pub short_info: Option<Option<String>>,
+    
+    #[schema(value_type = Option<String>, format = Binary)]
+    pub image: Option<Vec<u8>>,
+    
+    pub favicon_url: Option<Option<String>>,
+    pub content_type: Option<String>,
+    pub is_active: Option<bool>
+}
+
 pub struct ParsedWebsitePreviewData {
     pub url: Option<String>,
     pub title: Option<String>,
@@ -67,6 +82,22 @@ impl ParsedWebsitePreviewData {
             },
             ..Default::default()
         }
+    }
+
+    pub fn update_active_model(self, mut active_model: website_previews::ActiveModel, uploaded_image_url: Option<String>) -> website_previews::ActiveModel {
+        if let Some(val) = self.url { active_model.url = Set(val); }
+        if let Some(val) = self.title { active_model.title = Set(Some(val)); }
+        if let Some(val) = self.description { active_model.description = Set(Some(val)); }
+        if let Some(val) = self.short_info { active_model.short_info = Set(Some(val)); }
+        if let Some(val) = self.favicon_url { active_model.favicon_url = Set(Some(val)); }
+        if let Some(val) = self.content_type { active_model.content_type = Set(val); }
+        if let Some(val) = self.is_active { active_model.is_active = Set(val); }
+        
+        if let Some(val) = uploaded_image_url {
+            active_model.image_url = Set(Some(val));
+        }
+        
+        active_model
     }
 }
 

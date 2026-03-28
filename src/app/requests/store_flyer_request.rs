@@ -1,10 +1,11 @@
 use utoipa::ToSchema;
 use sea_orm::{Set, NotSet};
 use aws_sdk_s3::primitives::ByteStream;
+use serde::Deserialize;
 
 use crate::app::entities::flyers;
 
-#[derive(ToSchema)]
+#[derive(ToSchema, Deserialize)]
 pub struct StoreFlyerRequest {
     pub name: String,
 
@@ -14,6 +15,19 @@ pub struct StoreFlyerRequest {
     pub event_title: Option<String>,
     pub short_info: Option<String>,
     pub description: Option<String>,
+    pub is_active: Option<bool>
+}
+
+#[derive(ToSchema, Deserialize)]
+pub struct UpdateFlyerRequest {
+    pub name: Option<String>,
+
+    #[schema(value_type = Option<String>, format = Binary)]
+    pub file: Option<Vec<u8>>,
+
+    pub event_title: Option<Option<String>>,
+    pub short_info: Option<Option<String>>,
+    pub description: Option<Option<String>>,
     pub is_active: Option<bool>
 }
 
@@ -65,5 +79,19 @@ impl ParsedFlyerData {
             ..Default::default()
 
         }
+    }
+
+    pub fn update_active_model(self, mut active_model: flyers::ActiveModel, uploaded_url: Option<String>) -> flyers::ActiveModel {
+        if let Some(val) = self.name { active_model.name = Set(val); }
+        if let Some(val) = self.event_title { active_model.event_title = Set(Some(val)); }
+        if let Some(val) = self.short_info { active_model.short_info = Set(Some(val)); }
+        if let Some(val) = self.description { active_model.description = Set(Some(val)); }
+        if let Some(val) = self.is_active { active_model.is_active = Set(val); }
+        
+        if let Some(val) = uploaded_url {
+            active_model.url = Set(val);
+        }
+        
+        active_model
     }
 }

@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 use async_trait::async_trait;
+use sea_orm::IntoActiveModel;
 use super::crud::CrudService;
 
 use super::super::entities::videos as Video;
@@ -46,6 +47,35 @@ impl VideoService {
         let video = Self::create(db, active_model).await?;
 
         Ok(video)
+    }
+
+    pub async fn update_with_file(
+        db: &sea_orm::DatabaseConnection,
+        s3_client: &aws_sdk_s3::Client,
+        id: i32,
+        mut parsed_data: ParsedVideoData
+    ) -> anyhow::Result<Video::Model> {
+        let video = Self::find_by_id(db, id).await?.ok_or_else(|| anyhow::anyhow!("Video not found"))?;
+        
+        let mut uploaded_thumbnail_url = None;
+
+        if let Some(thumbnail_stream) = parsed_data.thumbnail_stream.take() {
+            let original_file_name = parsed_data.thumbnail_name.clone().unwrap_or_else(|| "unnamed_thumbnail".to_string());
+            let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_millis();
+            let file_name = format!("{}_{}", timestamp, original_file_name.replace(" ", "_"));
+            let s3_key = format!("videos/thumbnails/{}", file_name);
+            
+            crate::config::filesystems::upload(s3_client, &s3_key, thumbnail_stream).await?;
+
+            let s3_url = std::env::var("AWS_URL").unwrap_or_else(|_| "".to_string());
+            let bucket = std::env::var("AWS_BUCKET").unwrap_or_else(|_| "".to_string());
+            uploaded_thumbnail_url = Some(format!("{}/{}/{}", s3_url, bucket, s3_key));
+        }
+
+        let active_model = parsed_data.update_active_model(video.into_active_model(), uploaded_thumbnail_url);
+        let updated_video = Self::update(db, active_model).await?;
+
+        Ok(updated_video)
     }
 }
 

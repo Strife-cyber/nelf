@@ -11,7 +11,7 @@ use crate::{
     app::entities::website_previews,
     app::services::crud::CrudService,
     app::services::website_preview_service::WebsitePreviewService,
-    app::requests::store_website_preview_request::{StoreWebsitePreviewRequest, ParsedWebsitePreviewData}
+    app::requests::store_website_preview_request::{StoreWebsitePreviewRequest, UpdateWebsitePreviewRequest, ParsedWebsitePreviewData}
 };
 
 pub struct WebsitePreviewController;
@@ -63,6 +63,26 @@ pub async fn find_website_preview(
 }
 
 #[utoipa::path(
+    put,
+    path = "/api/website-previews/{id}",
+    params(
+        ("id" = i32, Path, description = "Website Preview ID")
+    ),
+    request_body(content = UpdateWebsitePreviewRequest, content_type="multipart/form-data"),
+    responses(
+        (status = 200, description = "Website preview updated successfully", body = website_previews::Model),
+        (status = 404, description = "Website preview not found")
+    )
+)]
+pub async fn update_website_preview(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+    multipart: Multipart,
+) -> Result<Json<website_previews::Model>, StatusCode> {
+    WebsitePreviewController::update(state, id, multipart).await
+}
+
+#[utoipa::path(
     delete,
     path = "/api/website-previews/{id}",
     params(
@@ -95,6 +115,36 @@ impl WebsitePreviewController {
         Extension(state): Extension<Arc<AppState>>,
         mut multipart: Multipart
     ) -> Result<Json<website_previews::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let website_preview = WebsitePreviewService::create_with_file(&state.db, &state.s3_client, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error creating website preview: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(website_preview))
+    }
+
+    pub async fn update(
+        Extension(state): Extension<Arc<AppState>>,
+        axum::extract::Path(id): axum::extract::Path<i32>,
+        mut multipart: Multipart
+    ) -> Result<Json<website_previews::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let website_preview = WebsitePreviewService::update_with_file(&state.db, &state.s3_client, id, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error updating website preview: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(website_preview))
+    }
+
+    async fn parse_multipart(multipart: &mut Multipart) -> Result<ParsedWebsitePreviewData, StatusCode> {
         let mut parsed_data = ParsedWebsitePreviewData::default();
 
         while let Ok(Some(mut field)) = multipart.next_field().await {
@@ -129,15 +179,7 @@ impl WebsitePreviewController {
                 }
             }
         }
-
-        let website_preview = WebsitePreviewService::create_with_file(&state.db, &state.s3_client, parsed_data)
-            .await
-            .map_err(|e| {
-                println!("Error creating website preview: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-
-        Ok(Json(website_preview))
+        Ok(parsed_data)
     }
 
     pub async fn find(

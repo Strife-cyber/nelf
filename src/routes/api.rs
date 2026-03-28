@@ -1,5 +1,5 @@
 use axum::Router;
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, get, post, put};
 use crate::app::controllers::video_controller;
 use crate::app::controllers::flyer_controller;
 use crate::app::controllers::user_controller;
@@ -17,6 +17,7 @@ pub fn video_routes() -> Router {
         .route("/videos", get(video_controller::list_videos))
         .route("/videos", post(video_controller::create_video))
         .route("/videos/{id}", get(video_controller::find_video))
+        .route("/videos/{id}", put(video_controller::update_video))
         .route("/videos/{id}", delete(video_controller::delete_video))
 }
 
@@ -25,6 +26,7 @@ pub fn flyer_routes() -> Router {
         .route("/flyers", get(flyer_controller::list_flyers))
         .route("/flyers", post(flyer_controller::create_flyer))
         .route("/flyers/{id}", get(flyer_controller::find_flyer))
+        .route("/flyers/{id}", put(flyer_controller::update_flyer))
         .route("/flyers/{id}", delete(flyer_controller::delete_flyer))
 }
 
@@ -33,6 +35,7 @@ pub fn user_routes() -> Router {
         .route("/users", get(user_controller::list_users))
         .route("/users", post(user_controller::create_user))
         .route("/users/{id}", get(user_controller::find_user))
+        .route("/users/{id}", put(user_controller::update_user))
         .route("/users/{id}", delete(user_controller::delete_user))
 }
 
@@ -41,6 +44,7 @@ pub fn website_preview_routes() -> Router {
         .route("/website-previews", get(website_preview_controller::list_website_previews))
         .route("/website-previews", post(website_preview_controller::create_website_preview))
         .route("/website-previews/{id}", get(website_preview_controller::find_website_preview))
+        .route("/website-previews/{id}", put(website_preview_controller::update_website_preview))
         .route("/website-previews/{id}", delete(website_preview_controller::delete_website_preview))
 }
 

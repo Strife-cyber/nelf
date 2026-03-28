@@ -8,8 +8,6 @@ pub mod config;
 pub mod routes;
 pub mod app;
 pub mod middleware;
-#[cfg(test)]
-mod gen_hash;
 mod state;
 
 #[derive(OpenApi)]
@@ -19,18 +17,22 @@ mod state;
         crate::app::controllers::video_controller::list_videos,
         crate::app::controllers::video_controller::create_video,
         crate::app::controllers::video_controller::find_video,
+        crate::app::controllers::video_controller::update_video,
         crate::app::controllers::video_controller::delete_video,
         crate::app::controllers::flyer_controller::list_flyers,
         crate::app::controllers::flyer_controller::create_flyer,
         crate::app::controllers::flyer_controller::find_flyer,
+        crate::app::controllers::flyer_controller::update_flyer,
         crate::app::controllers::flyer_controller::delete_flyer,
         crate::app::controllers::user_controller::list_users,
         crate::app::controllers::user_controller::create_user,
         crate::app::controllers::user_controller::find_user,
+        crate::app::controllers::user_controller::update_user,
         crate::app::controllers::user_controller::delete_user,
         crate::app::controllers::website_preview_controller::list_website_previews,
         crate::app::controllers::website_preview_controller::create_website_preview,
         crate::app::controllers::website_preview_controller::find_website_preview,
+        crate::app::controllers::website_preview_controller::update_website_preview,
         crate::app::controllers::website_preview_controller::delete_website_preview,
     ),
     components(
@@ -39,12 +41,16 @@ mod state;
             crate::app::controllers::auth_controller::AuthResponse,
             crate::app::entities::videos::Model,
             crate::app::requests::store_video_request::StoreVideoRequest,
+            crate::app::requests::store_video_request::UpdateVideoRequest,
             crate::app::entities::flyers::Model,
             crate::app::requests::store_flyer_request::StoreFlyerRequest,
+            crate::app::requests::store_flyer_request::UpdateFlyerRequest,
             crate::app::entities::users::Model,
             crate::app::requests::store_user_request::StoreUserRequest,
+            crate::app::requests::store_user_request::UpdateUserRequest,
             crate::app::entities::website_previews::Model,
             crate::app::requests::store_website_preview_request::StoreWebsitePreviewRequest,
+            crate::app::requests::store_website_preview_request::UpdateWebsitePreviewRequest,
         )
     ),
     tags(

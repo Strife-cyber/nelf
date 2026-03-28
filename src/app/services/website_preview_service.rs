@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 use async_trait::async_trait;
+use sea_orm::IntoActiveModel;
 use super::crud::CrudService;
 
 use super::super::entities::website_previews as WebsitePreview;
@@ -45,6 +46,35 @@ impl WebsitePreviewService {
         let preview = Self::create(db, active_model).await?;
 
         Ok(preview)
+    }
+
+    pub async fn update_with_file(
+        db: &sea_orm::DatabaseConnection,
+        s3_client: &aws_sdk_s3::Client,
+        id: i32,
+        mut parsed_data: ParsedWebsitePreviewData
+    ) -> anyhow::Result<WebsitePreview::Model> {
+        let preview = Self::find_by_id(db, id).await?.ok_or_else(|| anyhow::anyhow!("Website preview not found"))?;
+        
+        let mut uploaded_image_url = None;
+
+        if let Some(image_stream) = parsed_data.image_stream.take() {
+            let original_file_name = parsed_data.image_name.clone().unwrap_or_else(|| "unnamed_preview".to_string());
+            let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_millis();
+            let file_name = format!("{}_{}", timestamp, original_file_name.replace(" ", "_"));
+            let s3_key = format!("previews/{}", file_name);
+            
+            crate::config::filesystems::upload(s3_client, &s3_key, image_stream).await?;
+
+            let s3_url = std::env::var("AWS_URL").unwrap_or_else(|_| "".to_string());
+            let bucket = std::env::var("AWS_BUCKET").unwrap_or_else(|_| "".to_string());
+            uploaded_image_url = Some(format!("{}/{}/{}", s3_url, bucket, s3_key));
+        }
+
+        let active_model = parsed_data.update_active_model(preview.into_active_model(), uploaded_image_url);
+        let updated_preview = Self::update(db, active_model).await?;
+
+        Ok(updated_preview)
     }
 }
 

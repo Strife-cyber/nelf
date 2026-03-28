@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 use async_trait::async_trait;
+use sea_orm::IntoActiveModel;
 use super::crud::CrudService;
 
 use super::super::entities::flyers as Flyer;
@@ -54,6 +55,35 @@ impl FlyerService {
         let flyer = Self::create(db, active_model).await?;
 
         Ok(flyer)
+    }
+
+    pub async fn update_with_file(
+        db: &sea_orm::DatabaseConnection,
+        s3_client: &aws_sdk_s3::Client,
+        id: i32,
+        mut parsed_data: ParsedFlyerData
+    ) -> anyhow::Result<Flyer::Model> {
+        let flyer = Self::find_by_id(db, id).await?.ok_or_else(|| anyhow::anyhow!("Flyer not found"))?;
+        
+        let mut uploaded_url = None;
+
+        if let Some(file_stream) = parsed_data.file_stream.take() {
+            let original_file_name = parsed_data.file_name.clone().unwrap_or_else(|| "unnamed_upload".to_string());
+            let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_millis();
+            let file_name = format!("{}_{}", timestamp, original_file_name.replace(" ", "_"));
+            let s3_key = format!("flyers/{}", file_name);
+            
+            crate::config::filesystems::upload(s3_client, &s3_key, file_stream).await?;
+
+            let url = std::env::var("AWS_URL").unwrap_or_else(|_| "".to_string());
+            let bucket = std::env::var("AWS_BUCKET").unwrap_or_else(|_| "".to_string());
+            uploaded_url = Some(format!("{}/{}/{}", url, bucket, s3_key));
+        }
+
+        let active_model = parsed_data.update_active_model(flyer.into_active_model(), uploaded_url);
+        let updated_flyer = Self::update(db, active_model).await?;
+
+        Ok(updated_flyer)
     }
 }
 

@@ -11,7 +11,7 @@ use crate::{
     app::entities::users,
     app::services::crud::CrudService,
     app::services::user_service::UserService,
-    app::requests::store_user_request::{StoreUserRequest, ParsedUserData}
+    app::requests::store_user_request::{StoreUserRequest, UpdateUserRequest, ParsedUserData}
 };
 
 pub struct UserController;
@@ -63,6 +63,26 @@ pub async fn find_user(
 }
 
 #[utoipa::path(
+    put,
+    path = "/api/users/{id}",
+    params(
+        ("id" = i32, Path, description = "User ID")
+    ),
+    request_body(content = UpdateUserRequest, content_type="multipart/form-data"),
+    responses(
+        (status = 200, description = "User updated successfully", body = users::Model),
+        (status = 404, description = "User not found")
+    )
+)]
+pub async fn update_user(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+    multipart: Multipart,
+) -> Result<Json<users::Model>, StatusCode> {
+    UserController::update(state, id, multipart).await
+}
+
+#[utoipa::path(
     delete,
     path = "/api/users/{id}",
     params(
@@ -95,6 +115,36 @@ impl UserController {
         Extension(state): Extension<Arc<AppState>>,
         mut multipart: Multipart
     ) -> Result<Json<users::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let user = UserService::create_with_file(&state.db, &state.s3_client, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error creating user: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(user))
+    }
+
+    pub async fn update(
+        Extension(state): Extension<Arc<AppState>>,
+        axum::extract::Path(id): axum::extract::Path<i32>,
+        mut multipart: Multipart
+    ) -> Result<Json<users::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let user = UserService::update_with_file(&state.db, &state.s3_client, id, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error updating user: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(user))
+    }
+
+    async fn parse_multipart(multipart: &mut Multipart) -> Result<ParsedUserData, StatusCode> {
         let mut parsed_data = ParsedUserData::default();
 
         while let Ok(Some(mut field)) = multipart.next_field().await {
@@ -120,6 +170,7 @@ impl UserController {
                 match field_name.as_str() {
                     "name" => parsed_data.name = Some(text),
                     "email" => parsed_data.email = Some(text),
+                    "password" => parsed_data.password = Some(text),
                     "phone" => parsed_data.phone = Some(text),
                     "role" => parsed_data.role = Some(text),
                     "description" => parsed_data.description = Some(text),
@@ -133,15 +184,7 @@ impl UserController {
                 }
             }
         }
-
-        let user = UserService::create_with_file(&state.db, &state.s3_client, parsed_data)
-            .await
-            .map_err(|e| {
-                println!("Error creating user: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-
-        Ok(Json(user))
+        Ok(parsed_data)
     }
 
     pub async fn find(

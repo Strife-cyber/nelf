@@ -11,7 +11,7 @@ use crate::{
     app::entities::videos,
     app::services::crud::CrudService,
     app::services::video_service::VideoService,
-    app::requests::store_video_request::{StoreVideoRequest, ParsedVideoData}
+    app::requests::store_video_request::{StoreVideoRequest, UpdateVideoRequest, ParsedVideoData}
 };
 
 pub struct VideoController;
@@ -65,6 +65,26 @@ pub async fn find_video(
     VideoController::find(state, id).await
 }
 
+#[utoipa::path(
+    put,
+    path = "/api/videos/{id}",
+    params(
+        ("id" = i32, Path, description = "Video ID")
+    ),
+    request_body(content = UpdateVideoRequest, content_type="multipart/form-data"),
+    responses(
+        (status = 200, description = "Video updated successfully", body = videos::Model),
+        (status = 404, description = "Video not found")
+    )
+)]
+pub async fn update_video(
+    state: Extension<Arc<AppState>>,
+    id: axum::extract::Path<i32>,
+    multipart: Multipart,
+) -> Result<Json<videos::Model>, StatusCode> {
+    VideoController::update(state, id, multipart).await
+}
+
 // Delete
 #[utoipa::path(
     delete,
@@ -99,6 +119,36 @@ impl VideoController {
         Extension(state): Extension<Arc<AppState>>,
         mut multipart: Multipart
     ) -> Result<Json<videos::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let video = VideoService::create_with_file(&state.db, &state.s3_client, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error creating video: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(video))
+    }
+
+    pub async fn update(
+        Extension(state): Extension<Arc<AppState>>,
+        axum::extract::Path(id): axum::extract::Path<i32>,
+        mut multipart: Multipart
+    ) -> Result<Json<videos::Model>, StatusCode> {
+        let parsed_data = Self::parse_multipart(&mut multipart).await?;
+
+        let video = VideoService::update_with_file(&state.db, &state.s3_client, id, parsed_data)
+            .await
+            .map_err(|e| {
+                println!("Error updating video: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+
+        Ok(Json(video))
+    }
+
+    async fn parse_multipart(multipart: &mut Multipart) -> Result<ParsedVideoData, StatusCode> {
         let mut parsed_data = ParsedVideoData::default();
 
         while let Ok(Some(mut field)) = multipart.next_field().await {
@@ -132,15 +182,7 @@ impl VideoController {
                 }
             }
         }
-
-        let video = VideoService::create_with_file(&state.db, &state.s3_client, parsed_data)
-            .await
-            .map_err(|e| {
-                println!("Error creating video: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-
-        Ok(Json(video))
+        Ok(parsed_data)
     }
 
     pub async fn find(
