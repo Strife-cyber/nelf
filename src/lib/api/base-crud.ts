@@ -4,7 +4,8 @@
 // =============================================================================
 
 import { apiClient } from './config';
-import type { ApiResponse, PaginatedResponse, ApiError } from '../../types';
+import { UnauthorizedError } from './errors';
+import type { ApiResponse, PaginatedResponse } from '../../types';
 
 export interface CrudService<T, CreateRequest, UpdateRequest> {
   getAll(params?: Record<string, any>): Promise<PaginatedResponse<T>>;
@@ -27,12 +28,34 @@ export abstract class BaseCrudService<T, CreateRequest, UpdateRequest>
     return `${apiClient.getBaseUrl()}/${this.endpoint}`;
   }
 
+  protected buildFetchHeaders(options: RequestInit): Record<string, string> {
+    const headers: Record<string, string> = { ...apiClient.getHeaders() };
+    if (options.headers) {
+      new Headers(options.headers as HeadersInit).forEach((value, key) => {
+        headers[key] = value;
+      });
+    }
+    if (options.body instanceof FormData) {
+      delete headers['Content-Type'];
+    }
+    return headers;
+  }
+
   protected async handleResponse<T>(response: Response): Promise<T> {
+    if (response.status === 401) {
+      throw new UnauthorizedError();
+    }
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const msg =
+        (errorData as { message?: string }).message || `HTTP error! status: ${response.status}`;
+      throw new Error(msg);
     }
-    return response.json();
+    const text = await response.text();
+    if (!text.trim()) {
+      return undefined as T;
+    }
+    return JSON.parse(text) as T;
   }
 
   protected async request<T>(
@@ -45,10 +68,7 @@ export abstract class BaseCrudService<T, CreateRequest, UpdateRequest>
     try {
       const response = await fetch(url, {
         ...options,
-        headers: {
-          ...apiClient.getHeaders(),
-          ...options.headers,
-        },
+        headers: this.buildFetchHeaders(options),
         signal: controller.signal,
       });
 
@@ -56,7 +76,13 @@ export abstract class BaseCrudService<T, CreateRequest, UpdateRequest>
       return this.handleResponse<T>(response);
     } catch (error) {
       clearTimeout(timeoutId);
+      if (error instanceof UnauthorizedError) {
+        throw error;
+      }
       if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error('API request failed: request timed out');
+        }
         throw new Error(`API request failed: ${error.message}`);
       }
       throw new Error('Unknown API error occurred');
@@ -109,5 +135,33 @@ export abstract class BaseCrudService<T, CreateRequest, UpdateRequest>
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  /** Bare JSON array from GET /{endpoint} (Rust/OpenAPI list). */
+  async listAll(): Promise<T[]> {
+    const raw = await this.request<unknown>(this.getBaseUrl(), { method: 'GET' });
+    if (Array.isArray(raw)) {
+      return raw as T[];
+    }
+    if (raw && typeof raw === 'object' && Array.isArray((raw as PaginatedResponse<T>).data)) {
+      return (raw as PaginatedResponse<T>).data;
+    }
+    throw new Error('Unexpected list response shape');
+  }
+
+  async getOne(id: number): Promise<T> {
+    return this.request<T>(`${this.getBaseUrl()}/${id}`, { method: 'GET' });
+  }
+
+  async createFormData(formData: FormData): Promise<T> {
+    return this.request<T>(this.getBaseUrl(), { method: 'POST', body: formData });
+  }
+
+  async updateFormData(id: number, formData: FormData): Promise<T> {
+    return this.request<T>(`${this.getBaseUrl()}/${id}`, { method: 'PUT', body: formData });
+  }
+
+  async removeOne(id: number): Promise<void> {
+    await this.request<void>(`${this.getBaseUrl()}/${id}`, { method: 'DELETE' });
   }
 }

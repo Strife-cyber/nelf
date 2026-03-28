@@ -11,6 +11,7 @@ export interface ApiConfig {
 
 class ApiClient {
   private config: ApiConfig;
+  private authToken: string | null = null;
 
   constructor(config: ApiConfig) {
     this.config = {
@@ -20,6 +21,14 @@ class ApiClient {
       },
       ...config,
     };
+  }
+
+  setAuthToken(token: string | null): void {
+    this.authToken = token;
+  }
+
+  getAuthToken(): string | null {
+    return this.authToken;
   }
 
   getConfig(): ApiConfig {
@@ -35,7 +44,11 @@ class ApiClient {
   }
 
   getHeaders(): Record<string, string> {
-    return { ...this.config.headers };
+    const headers = { ...this.config.headers };
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+    return headers;
   }
 
   getTimeout(): number {
@@ -43,9 +56,9 @@ class ApiClient {
   }
 }
 
-// Default configuration
+// Default configuration — base URL includes /api (see services: flyers → …/api/flyers)
 const defaultConfig: ApiConfig = {
-  baseUrl: (globalThis as any).import?.meta?.env?.PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
+  baseUrl: import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

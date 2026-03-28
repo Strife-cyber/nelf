@@ -1,3 +1,10 @@
+---
+export interface Props {
+	title?: string;
+}
+
+const { title = 'Nelf - Votre troisieme main' } = Astro.props;
+---
 <!doctype html>
 <html lang="en">
 	<head>
@@ -6,7 +13,7 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Nelf - Votre troisieme main</title>
+		<title>{title}</title>
 	</head>
 	<body>
 		<slot />

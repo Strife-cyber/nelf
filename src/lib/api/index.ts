@@ -6,6 +6,19 @@
 // Configuration
 export { apiClient, configureApi, type ApiConfig } from './config';
 
+export { UnauthorizedError } from './errors';
+
+export {
+	loginRequest,
+	persistAuthSession,
+	clearAuthSession,
+	syncAuthFromStorage,
+	isAuthenticated,
+	ADMIN_TOKEN_STORAGE_KEY,
+	type LoginRequest,
+	type AuthResponse,
+} from './auth-service';
+
 // Base CRUD service
 export { BaseCrudService, type CrudService } from './base-crud';
 

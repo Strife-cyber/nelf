@@ -1,0 +1,11 @@
+---
+import '../../styles/global.css';
+import Layout from '@/layouts/Layout.astro';
+import { AdminLogoutRedirect } from '@/components/admin/AdminLogoutRedirect';
+---
+
+<Layout title="Signing out | Nelf">
+	<div class="min-h-screen bg-black">
+		<AdminLogoutRedirect client:only="react" />
+	</div>
+</Layout>

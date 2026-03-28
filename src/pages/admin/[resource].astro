@@ -1,0 +1,82 @@
+---
+import '../../styles/global.css';
+import Layout from '@/layouts/Layout.astro';
+import nelfLogo from '@/assets/nelf-logo.jpeg';
+import { AdminDashboardPanel } from '@/components/admin/AdminDashboardPanel';
+
+const RESOURCE_LINKS = [
+	{ id: 'flyers', label: 'Flyers' },
+	{ id: 'users', label: 'Users' },
+	{ id: 'videos', label: 'Videos' },
+	{ id: 'website-previews', label: 'Website previews' },
+] as const;
+
+type ResourceId = (typeof RESOURCE_LINKS)[number]['id'];
+
+export async function getStaticPaths() {
+	return [
+		{ params: { resource: 'flyers' } },
+		{ params: { resource: 'users' } },
+		{ params: { resource: 'videos' } },
+		{ params: { resource: 'website-previews' } },
+	];
+}
+
+const param = Astro.params.resource ?? '';
+const resource: ResourceId = RESOURCE_LINKS.some((r) => r.id === param) ? (param as ResourceId) : 'flyers';
+---
+
+<Layout title="Admin | Nelf">
+	<div class="relative min-h-screen bg-black font-sans text-white">
+		<div class="pointer-events-none fixed inset-0 bg-linear-to-br from-nelf-purple/20 via-black to-black" aria-hidden="true"></div>
+		<div
+			class="pointer-events-none fixed inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-nelf-pink/18 via-transparent to-transparent"
+			aria-hidden="true"
+		>
+		</div>
+
+		<div class="relative z-10 flex min-h-screen flex-col lg:flex-row">
+			<aside class="flex flex-col border-b border-white/10 lg:w-64 lg:border-r lg:border-b-0 lg:border-white/10">
+				<div class="flex h-16 items-center justify-between gap-3 border-b border-white/10 px-4 lg:px-5">
+					<a href="/">
+						<img src={nelfLogo.src} alt="Nelf" class="h-9 w-auto" />
+					</a>
+					<a
+						href="/admin/logout"
+						class="rounded-md border border-white/20 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:border-nelf-pink/60 hover:text-nelf-pink"
+					>
+						Log out
+					</a>
+				</div>
+				<nav class="flex flex-wrap gap-1 p-3 lg:flex-col lg:gap-0.5" aria-label="Resources">
+					{
+						RESOURCE_LINKS.map(({ id, label }) => (
+							<a
+								href={`/admin/${id}`}
+								class:list={[
+									'block w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors',
+									resource === id
+										? 'border border-white/15 bg-white/10 font-medium text-white'
+										: 'border border-transparent text-white/65 hover:bg-white/5 hover:text-nelf-pink',
+								]}
+							>
+								{label}
+							</a>
+						))
+					}
+				</nav>
+			</aside>
+
+			<div class="flex min-w-0 flex-1 flex-col">
+				<header class="flex h-14 items-center justify-between border-b border-white/10 px-4 sm:px-6">
+					<h1 class="text-lg font-semibold tracking-tight">Dashboard</h1>
+					<a href="/" class="hidden text-sm text-white/60 transition-colors hover:text-nelf-pink sm:inline">Site</a>
+				</header>
+
+				<main class="flex-1 overflow-auto p-4 sm:p-6">
+					<AdminDashboardPanel client:load resource={resource} />
+				</main>
+			</div>
+		</div>
+	</div>
+</Layout>

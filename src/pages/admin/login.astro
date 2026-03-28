@@ -1,0 +1,33 @@
+---
+import '../../styles/global.css';
+import Layout from '@/layouts/Layout.astro';
+import nelfLogo from '@/assets/nelf-logo.jpeg';
+import { AdminLoginForm } from '@/components/admin/AdminLoginForm';
+---
+
+<Layout title="Admin sign in | Nelf">
+	<div class="relative flex min-h-screen flex-col bg-black font-sans text-white">
+		<div class="pointer-events-none absolute inset-0 bg-linear-to-br from-nelf-purple/30 via-black to-black" aria-hidden="true"></div>
+		<div class="pointer-events-none absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-nelf-pink/25 via-transparent to-transparent" aria-hidden="true"></div>
+
+		<header class="relative z-10 flex h-16 items-center justify-between border-b border-white/10 px-6 lg:px-10">
+			<a href="/" class="flex items-center gap-2 transition-opacity hover:opacity-90">
+				<img src={nelfLogo.src} alt="Nelf" class="h-10 w-auto" />
+			</a>
+			<a href="/" class="text-sm text-white/70 transition-colors hover:text-nelf-pink">Back to site</a>
+		</header>
+
+		<main class="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
+			<div class="w-full max-w-md rounded-xl border border-white/15 bg-black/50 px-8 py-10 shadow-[0_4px_30px_rgba(0,0,0,0.35)] backdrop-blur-md">
+				<div class="mb-8 flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2">
+					<span class="inline-block h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]"></span>
+					<p class="text-xs font-light uppercase tracking-widest text-white/75">Admin</p>
+				</div>
+				<h1 class="text-3xl font-semibold tracking-tight">Sign in</h1>
+				<p class="mt-2 text-sm text-white/55">Use your Nelf API credentials. No signup on this screen.</p>
+
+				<AdminLoginForm client:load />
+			</div>
+		</main>
+	</div>
+</Layout>
