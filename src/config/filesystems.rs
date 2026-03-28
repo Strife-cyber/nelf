@@ -1,7 +1,7 @@
 use aws_sdk_s3 as s3;
 use aws_config::BehaviorVersion;
 
-pub async fn connect() -> Result<s3::Client, Box<dyn std::error::Error>> {
+pub async fn connect() -> Result<s3::Client, anyhow::Error> {
     dotenvy::dotenv().ok();
 
     let endpoint_url = std::env::var("AWS_URL")
@@ -34,7 +34,7 @@ pub async fn upload(
     client: &s3::Client,
     key: &str,
     content: Vec<u8>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), anyhow::Error> {
     dotenvy::dotenv().ok();
 
     let bucket = std::env::var("AWS_BUCKET")?;

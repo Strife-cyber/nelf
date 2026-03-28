@@ -1,6 +1,7 @@
 use std::sync::Arc;
-use axum::{Extension, Json, http::StatusCode};
+use axum::extract::Multipart;
 use sea_orm::IntoActiveModel;
+use axum::{Extension, Json, http::StatusCode};
 
 use crate::{
     AppState,
@@ -9,6 +10,7 @@ use crate::{
     app::services::flyer_service::FlyerService,
     app::requests::store_flyer_request::StoreFlyerRequest
 };
+use crate::app::requests::store_flyer_request::ParsedFlyerData;
 
 pub struct FlyerController;
 
@@ -28,16 +30,16 @@ pub async fn list_flyers(
 #[utoipa::path(
     post,
     path = "/api/flyers",
-    request_body = StoreFlyerRequest,
+    request_body(content = StoreFlyerRequest, content_type="multipart/form-data"),
     responses(
         (status = 201, description = "Flyer created successfully", body = flyers::Model)
     )
 )]
 pub async fn create_flyer(
     state: Extension<Arc<AppState>>,
-    payload: Json<StoreFlyerRequest>,
+    multipart: Multipart,
 ) -> Result<Json<flyers::Model>, StatusCode> {
-    FlyerController::create(state, payload).await
+    FlyerController::create(state, multipart).await
 }
 
 #[utoipa::path(
@@ -89,13 +91,36 @@ impl FlyerController {
 
     pub async fn create(
         Extension(state): Extension<Arc<AppState>>,
-        Json(payload): Json<StoreFlyerRequest>,
+        mut multipart: Multipart
     ) -> Result<Json<flyers::Model>, StatusCode> {
-        let active_model = payload.into_active_model();
+        let mut parsed_data = ParsedFlyerData::default();
 
-        let flyer = FlyerService::create(&state.db, active_model)
+        while let Ok(Some(field)) = multipart.next_field().await {
+            let field_name = field.name().unwrap_or("").to_string();
+
+            if field_name == "file" {
+                parsed_data.file_name = field.file_name().map(|s| s.to_string());
+                if let Ok(bytes) = field.bytes().await {
+                    parsed_data.file_bytes = Some(bytes.to_vec());
+                }
+            } else if let Ok(text) = field.text().await {
+                match field_name.as_str() {
+                    "name" => parsed_data.name = Some(text),
+                    "event_title" => parsed_data.event_title = Some(text),
+                    "short_info" => parsed_data.short_info = Some(text),
+                    "description" => parsed_data.description = Some(text),
+                    "is_active" => parsed_data.is_active = text.parse().ok(),
+                    _ => {}
+                }
+            }
+        }
+
+        let flyer = FlyerService::create_with_file(&state.db, &state.s3_client, parsed_data)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(|e| {
+                println!("Error creating flyer: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
 
         Ok(Json(flyer))
     }

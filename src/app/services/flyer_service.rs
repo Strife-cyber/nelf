@@ -1,14 +1,48 @@
+use std::time::SystemTime;
 use async_trait::async_trait;
 use super::crud::CrudService;
 
 use super::super::entities::flyers as Flyer;
+use super::super::requests::store_flyer_request::ParsedFlyerData;
 
 pub struct FlyerService;
 
 #[async_trait]
 impl CrudService<Flyer::Entity> for FlyerService {}
 
-impl FlyerService {}
+impl FlyerService {
+    pub async fn create_with_file(
+        db: &sea_orm::DatabaseConnection,
+        s3_client: &aws_sdk_s3::Client,
+        parsed_data: ParsedFlyerData
+    ) -> anyhow::Result<Flyer::Model> {
+        let name = parsed_data.name.clone().ok_or_else(|| anyhow::anyhow!("Name is required"))?;
+        let file_bytes = parsed_data.file_bytes.clone().ok_or_else(|| anyhow::anyhow!("File is required"))?;
+
+        let original_file_name = parsed_data.file_name.clone().unwrap_or_else(|| "unnamed_upload".to_string());
+
+        let timestamp = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_millis();
+
+        let file_name = format!("{}_{}", timestamp, original_file_name.replace(" ", "_"));
+
+        let s3_key = format!("flyers/{}", file_name);
+        crate::config::filesystems::upload(s3_client, &s3_key, file_bytes).await?;
+
+        let url = std::env::var("AWS_URL").unwrap_or_else(|_| "".to_string());
+        let bucket = std::env::var("AWS_BUCKET").unwrap_or_else(|_| "".to_string());
+
+        let s3_url = format!("{}/{}/{}", url, bucket, s3_key);
+
+        let active_model = parsed_data.into_active_model(name, s3_url);
+
+        let flyer = Self::create(db, active_model).await?;
+
+        Ok(flyer)
+    }
+}
 
 #[cfg(test)]
 mod tests {

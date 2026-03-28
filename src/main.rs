@@ -48,11 +48,13 @@ mod state;
 struct ApiDoc;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), anyhow::Error> {
     let db = config::database::connect().await;
+    let client = config::filesystems::connect().await?;
 
     let state = Arc::new(AppState {
-        db: Arc::new(db)
+        db: Arc::new(db),
+        s3_client: Arc::new(client)
     });
 
     // Swagger UI at /swagger-ui/
@@ -64,9 +66,11 @@ async fn main() {
         .merge(swagger_router)
         .layer(Extension(state));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    println!("listening on {}", listener.local_addr().unwrap());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    println!("listening on {}", listener.local_addr()?);
     println!("Swagger UI available at http://127.0.0.1:3000/swagger-ui/");
 
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
