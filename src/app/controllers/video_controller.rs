@@ -170,6 +170,7 @@ impl VideoController {
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
                 
                 parsed_data.thumbnail_stream = Some(stream);
+                parsed_data.temp_file = Some(temp_file);
             } else if let Ok(text) = field.text().await {
                 match field_name.as_str() {
                     "name" => parsed_data.name = Some(text),

@@ -23,4 +23,5 @@ jsonwebtoken = "9.3"
 argon2 = "0.5"
 password-hash = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
+tower-http = { version = "0.6", features = ["cors"] }
 

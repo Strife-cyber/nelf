@@ -2,6 +2,7 @@ use std::sync::Arc;
 use axum::Extension;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use tower_http::cors::{CorsLayer, Any};
 use crate::state::AppState;
 
 pub mod config;
@@ -73,9 +74,15 @@ async fn main() -> Result<(), anyhow::Error> {
     let swagger_router = SwaggerUi::new("/swagger-ui")
         .url("/swagger-ui/openapi.json", ApiDoc::openapi());
 
+    let cors = CorsLayer::new()
+        .allow_origin(["http://localhost:4321".parse().unwrap()])
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     let app = axum::Router::new()
         .nest("/api", routes::api::api_routes())
         .merge(swagger_router)
+        .layer(cors)
         .layer(axum::extract::DefaultBodyLimit::disable())
         .layer(Extension(state));
 

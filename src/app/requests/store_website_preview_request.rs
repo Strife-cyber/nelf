@@ -45,6 +45,7 @@ pub struct ParsedWebsitePreviewData {
     pub is_active: Option<bool>,
     pub image_stream: Option<ByteStream>,
     pub image_name: Option<String>,
+    pub temp_file: Option<tempfile::NamedTempFile>,
 }
 
 impl Default for ParsedWebsitePreviewData {
@@ -59,6 +60,7 @@ impl Default for ParsedWebsitePreviewData {
             is_active: None,
             image_stream: None,
             image_name: None,
+            temp_file: None,
         }
     }
 }

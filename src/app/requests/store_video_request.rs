@@ -42,6 +42,7 @@ pub struct ParsedVideoData {
     pub is_active: Option<bool>,
     pub thumbnail_stream: Option<ByteStream>,
     pub thumbnail_name: Option<String>,
+    pub temp_file: Option<tempfile::NamedTempFile>,
 }
 
 impl Default for ParsedVideoData {
@@ -55,6 +56,7 @@ impl Default for ParsedVideoData {
             is_active: None,
             thumbnail_stream: None,
             thumbnail_name: None,
+            temp_file: None,
         }
     }
 }

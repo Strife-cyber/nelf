@@ -166,6 +166,7 @@ impl WebsitePreviewController {
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
                 
                 parsed_data.image_stream = Some(stream);
+                parsed_data.temp_file = Some(temp_file);
             } else if let Ok(text) = field.text().await {
                 match field_name.as_str() {
                     "url" => parsed_data.url = Some(text),

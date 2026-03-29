@@ -52,6 +52,7 @@ pub struct ParsedUserData {
     pub is_active: Option<bool>,
     pub avatar_stream: Option<ByteStream>,
     pub avatar_name: Option<String>,
+    pub temp_file: Option<tempfile::NamedTempFile>,
 }
 
 impl Default for ParsedUserData {
@@ -68,6 +69,7 @@ impl Default for ParsedUserData {
             is_active: None,
             avatar_stream: None,
             avatar_name: None,
+            temp_file: None,
         }
     }
 }

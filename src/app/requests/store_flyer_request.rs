@@ -39,6 +39,7 @@ pub struct ParsedFlyerData {
     pub is_active: Option<bool>,
     pub file_stream: Option<ByteStream>,
     pub file_name: Option<String>,
+    pub temp_file: Option<tempfile::NamedTempFile>,
 }
 
 impl Default for ParsedFlyerData {
@@ -51,6 +52,7 @@ impl Default for ParsedFlyerData {
             is_active: None,
             file_stream: None,
             file_name: None,
+            temp_file: None,
         }
     }
 }
