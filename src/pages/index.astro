@@ -25,7 +25,17 @@ const [flyerResult, videoResult, previewResult] = results;
 const flyers = flyerResult.status === 'fulfilled' ? flyerResult.value : [];
 const videos = videoResult.status === 'fulfilled' ? videoResult.value : [];
 const previews = previewResult.status === 'fulfilled' ? previewResult.value : [];
+const websitePreviewCards = previews.map((preview) => {
+	try {
+		const hostname = new URL(preview.url).hostname.replace(/^www\./, '');
+		return { ...preview, hostname };
+	} catch {
+		return { ...preview, hostname: preview.url };
+	}
+});
 const flyerModalData = JSON.stringify(flyers);
+const videoModalData = JSON.stringify(videos);
+const websiteModalData = JSON.stringify(websitePreviewCards);
 console.log(flyers, videos, previews);
 ---
 
@@ -237,14 +247,107 @@ console.log(flyers, videos, previews);
 
 				<!-- Grid -->
 				<div
-					id="website-previews"
-					class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full"
+					id="videos"
+					class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full"
 				>
 					{
-						previews.map((preview, index) => (
-							<button>
-								<iframe src={preview.url} frameborder="0"></iframe>
+						videos.map((video, index) => (
+							<button
+								type="button"
+								class="group relative aspect-video overflow-hidden rounded-3xl border border-white/10 bg-neutral-950 shadow-lg shadow-black/30 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-300/40 hover:shadow-cyan-500/10 hover:shadow-2xl video-card"
+								data-video-index={index}
+								aria-label={`Open video ${video.name}`}
+							>
+								{
+									video.thumbnail_url ? (
+										<img
+											src={video.thumbnail_url}
+											alt={video.name}
+											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+										/>
+									) : (
+										<video 
+											src={video.url}
+											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+											muted
+											playsinline
+											preload="metadata"
+										></video>
+									)
+								}
+								<div class="absolute inset-0 bg-linear-to-t from-black/90 via-black/25 to-black/10"></div>
+								<div class="absolute inset-0 flex items-center justify-center">
+									<div class="flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-sm transition duration-300 group-hover:scale-110 group-hover:border-cyan-300/50">
+										<svg class="ml-1 h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+											<path d="M8 5v14l11-7z"></path>
+										</svg>
+									</div>
+								</div>
+								<div class="absolute right-0 bottom-0 left-0 p-5 text-left">
+									<p class="text-white/65 text-[0.65rem] uppercase tracking-[0.32em]">
+										Video
+									</p>
+									<p class="mt-3 truncate font-medium text-white text-base">
+										{video.name}
+									</p>
+								</div>
 							</button>
+						))
+					}
+				</div>
+
+				<!-- Grid -->
+				<div
+					id="website-previews"
+					class="grid grid-cols-1 gap-8 w-full xl:grid-cols-2"
+				>
+					{
+						websitePreviewCards.map((preview, index) => (
+							<div
+								class="group relative w-full max-w-184 justify-self-center overflow-hidden rounded-[2rem] border border-white/10 bg-[#09090b] shadow-lg shadow-black/30 transition-all duration-500 hover:-translate-y-2 hover:border-cyan-300/40 hover:shadow-cyan-500/10 hover:shadow-2xl"
+								data-website-index={index}
+								role="button"
+								tabindex="0"
+								aria-label={`Open website details for ${preview.title || preview.hostname}`}
+							>
+								<div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.14),transparent_24%)]"></div>
+								<div class="relative p-4 sm:p-5">
+									<div class="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#111214] shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
+										<div class="flex items-center gap-2 border-white/10 border-b bg-white/5 px-4 py-3">
+											<span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
+											<span class="h-2.5 w-2.5 rounded-full bg-[#febc2e]"></span>
+											<span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
+											<div class="ml-3 flex-1 truncate rounded-full border border-white/10 bg-black/35 px-4 py-1.5 text-[0.65rem] text-white/55">
+												{preview.hostname}
+											</div>
+										</div>
+
+										<div class="relative aspect-16/10 overflow-hidden bg-[#0f1012]">
+											<div
+												class="absolute left-0 top-0 h-[calc(100%/var(--desktop-scale))] w-[calc(100%/var(--desktop-scale))] origin-top-left"
+												style="--desktop-scale: 0.46; transform: scale(var(--desktop-scale));"
+											>
+												<iframe
+													src={preview.url}
+													title={preview.title || preview.hostname}
+													loading="lazy"
+													class="pointer-events-none h-full w-full bg-white"
+													sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+												></iframe>
+											</div>
+											<div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-100"></div>
+										</div>
+									</div>
+
+									<div class="pointer-events-none right-8 bottom-8 absolute flex items-center gap-3 rounded-full border border-white/15 bg-black/55 px-4 py-2 text-white/80 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105">
+										<span class="truncate text-[0.68rem] uppercase tracking-[0.28em]">{preview.title || preview.hostname}</span>
+										<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17L17 7"></path>
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7h9v9"></path>
+										</svg>
+									</div>
+								</div>
+							</div>
 						))
 					}
 				</div>
@@ -252,6 +355,220 @@ console.log(flyers, videos, previews);
 			</section>
 			<!--<section id="team" class="flex justify-center items-center" style="height: calc(100vh - 4rem);"></section>-->
 		</main>
+		<div
+			id="video-modal"
+			data-videos={videoModalData}
+			class="hidden fixed inset-0 z-50 items-center justify-center p-4 sm:p-6"
+			role="presentation"
+			aria-hidden="true"
+		>
+			<button
+				id="video-modal-backdrop"
+				type="button"
+				class="absolute inset-0 bg-black/85 backdrop-blur-md"
+				aria-label="Close video modal"
+			></button>
+
+			<div
+				class="relative z-10 grid max-h-[92vh] w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 bg-black/90 shadow-2xl shadow-black/70 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.45fr)]"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="video-modal-title"
+			>
+				<div class="relative bg-[#09090b] p-4 sm:p-6">
+					<div class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#111214] shadow-[0_28px_120px_rgba(0,0,0,0.45)]">
+						<div class="flex items-center gap-2 border-white/10 border-b bg-white/5 px-4 py-3 sm:px-5">
+							<span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
+							<span class="h-2.5 w-2.5 rounded-full bg-[#febc2e]"></span>
+							<span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
+							<div id="video-modal-event-label" class="ml-3 flex-1 truncate rounded-full border border-white/10 bg-black/35 px-4 py-2 text-[0.68rem] text-white/60"></div>
+						</div>
+						<div class="relative aspect-video bg-black">
+							<video
+								id="video-modal-player"
+								src=""
+								poster=""
+								class="h-full w-full bg-black object-contain"
+								controls
+								playsinline
+								preload="metadata"
+							></video>
+						</div>
+					</div>
+
+					<button
+						id="video-modal-prev"
+						type="button"
+						class="top-1/2 left-7 absolute flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white transition hover:border-cyan-300/60 hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-30"
+						aria-label="Previous video"
+					>
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19l-7-7 7-7"></path>
+						</svg>
+					</button>
+
+					<button
+						id="video-modal-next"
+						type="button"
+						class="top-1/2 right-7 absolute flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white transition hover:border-cyan-300/60 hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-30"
+						aria-label="Next video"
+					>
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"></path>
+						</svg>
+					</button>
+				</div>
+
+				<div class="flex flex-col overflow-y-auto border-white/10 border-t lg:border-t-0 lg:border-l">
+					<div class="flex items-start justify-between gap-4 border-white/10 border-b px-6 py-5 sm:px-8">
+						<div class="min-w-0">
+							<p id="video-modal-count" class="truncate text-white/45 text-xs uppercase tracking-[0.35em]"></p>
+							<h3 id="video-modal-title" class="mt-3 truncate font-semibold text-white text-2xl sm:text-3xl"></h3>
+						</div>
+						<button
+							id="video-modal-close"
+							type="button"
+							class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/30 hover:bg-white/10"
+							aria-label="Close video modal"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					</div>
+
+					<div class="flex-1 space-y-6 px-6 py-6 sm:px-8 sm:py-8">
+						<div id="video-modal-event-group" class="rounded-2xl border border-white/10 bg-white/5 p-4" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Event</p>
+							<p id="video-modal-event" class="mt-2 text-white text-lg"></p>
+						</div>
+
+						<div id="video-modal-short-info-group" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Short info</p>
+							<p id="video-modal-short-info" class="mt-3 text-white/80 leading-relaxed"></p>
+						</div>
+
+						<div id="video-modal-description-group" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Description</p>
+							<p id="video-modal-description" class="mt-3 text-white/75 leading-relaxed"></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div
+			id="website-modal"
+			data-websites={websiteModalData}
+			class="hidden fixed inset-0 z-50 items-center justify-center p-4 sm:p-6"
+			role="presentation"
+			aria-hidden="true"
+		>
+			<button
+				id="website-modal-backdrop"
+				type="button"
+				class="absolute inset-0 bg-black/85 backdrop-blur-md"
+				aria-label="Close website modal"
+			></button>
+
+			<div
+				class="relative z-10 grid max-h-[92vh] w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 bg-black/90 shadow-2xl shadow-black/70 lg:grid-cols-[minmax(0,1.9fr)_minmax(280px,0.45fr)] xl:grid-cols-[minmax(0,2.15fr)_minmax(300px,0.4fr)]"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="website-modal-title"
+			>
+				<div class="bg-[#09090b] p-4 sm:p-6">
+					<div class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#111214] shadow-[0_28px_120px_rgba(0,0,0,0.45)]">
+						<div class="flex items-center gap-2 border-white/10 border-b bg-white/5 px-4 py-3 sm:px-5">
+							<span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
+							<span class="h-2.5 w-2.5 rounded-full bg-[#febc2e]"></span>
+							<span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
+							<div id="website-modal-browser-host" class="ml-3 flex-1 truncate rounded-full border border-white/10 bg-black/35 px-4 py-2 text-[0.68rem] text-white/60"></div>
+						</div>
+						<div class="relative aspect-16/10 max-h-[76vh] overflow-hidden bg-[#0f1012]">
+							<div
+								class="absolute left-0 top-0 h-[calc(100%/var(--desktop-scale))] w-[calc(100%/var(--desktop-scale))] origin-top-left"
+								style="--desktop-scale: 0.68; transform: scale(var(--desktop-scale));"
+							>
+								<iframe
+									id="website-modal-frame"
+									src=""
+									title=""
+									class="h-full w-full bg-white"
+									sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+								></iframe>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex flex-col overflow-y-auto border-white/10 border-t lg:border-t-0 lg:border-l">
+					<div class="flex items-start justify-between gap-4 border-white/10 border-b px-6 py-5 sm:px-8">
+						<div class="min-w-0">
+							<p id="website-modal-hostname" class="truncate text-white/45 text-xs uppercase tracking-[0.35em]"></p>
+							<h3 id="website-modal-title" class="mt-3 truncate font-semibold text-white text-2xl sm:text-3xl"></h3>
+						</div>
+						<button
+							id="website-modal-close"
+							type="button"
+							class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/30 hover:bg-white/10"
+							aria-label="Close website modal"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					</div>
+
+					<div class="flex-1 space-y-6 px-6 py-6 sm:px-8 sm:py-8">
+						<div class="flex items-center gap-3">
+							<div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+								<img
+									id="website-modal-favicon"
+									src=""
+									alt=""
+									class="h-6 w-6 object-contain"
+									hidden
+								/>
+								<svg id="website-modal-favicon-fallback" class="h-6 w-6 text-white/45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4 5h16v14H4z"></path>
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4 9h16"></path>
+								</svg>
+							</div>
+							<div class="min-w-0">
+								<p id="website-modal-content-type" class="text-white/55 text-[0.65rem] uppercase tracking-[0.28em]"></p>
+								<p id="website-modal-url" class="mt-2 truncate text-white/70 text-sm"></p>
+							</div>
+						</div>
+
+						<div id="website-modal-short-info-group" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Short info</p>
+							<p id="website-modal-short-info" class="mt-3 text-white/80 leading-relaxed"></p>
+						</div>
+
+						<div id="website-modal-description-group" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Description</p>
+							<p id="website-modal-description" class="mt-3 text-white/75 leading-relaxed"></p>
+						</div>
+					</div>
+
+					<div class="border-white/10 border-t px-6 py-5 sm:px-8">
+						<a
+							id="website-modal-link"
+							href="#"
+							target="_blank"
+							rel="noreferrer"
+							class="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:border-white/35 hover:bg-white/10"
+						>
+							<span>Open website</span>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17L17 7"></path>
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7h9v9"></path>
+							</svg>
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
 		<div
 			id="flyer-modal"
 			data-flyers={flyerModalData}
@@ -443,6 +760,26 @@ console.log(flyers, videos, previews);
 		url: string;
 	};
 
+	type VideoModalItem = {
+		name?: string;
+		description?: string;
+		event_title?: string;
+		short_info?: string;
+		thumbnail_url?: string;
+		url: string;
+	};
+
+	type WebsiteModalItem = {
+		title?: string;
+		description?: string;
+		short_info?: string;
+		url: string;
+		image_url?: string;
+		favicon_url?: string;
+		content_type: string;
+		hostname: string;
+	};
+
 	const flyerModal = document.getElementById('flyer-modal');
 	const flyerModalClose = document.getElementById('flyer-modal-close');
 	const flyerModalBackdrop = document.getElementById('flyer-modal-backdrop');
@@ -457,13 +794,62 @@ console.log(flyers, videos, previews);
 	const flyerModalShortInfo = document.getElementById('flyer-modal-short-info');
 	const flyerModalDescriptionGroup = document.getElementById('flyer-modal-description-group');
 	const flyerModalDescription = document.getElementById('flyer-modal-description');
-	const flyerCards = document.querySelectorAll('[data-flyer-index]');
+	const flyerCards = document.querySelectorAll<HTMLElement>('[data-flyer-index]');
 	const flyerItems = flyerModal ? JSON.parse(flyerModal.dataset.flyers || '[]') as FlyerModalItem[] : [];
+	const videoModal = document.getElementById('video-modal');
+	const videoModalClose = document.getElementById('video-modal-close');
+	const videoModalBackdrop = document.getElementById('video-modal-backdrop');
+	const videoModalPrev = document.getElementById('video-modal-prev') as HTMLButtonElement | null;
+	const videoModalNext = document.getElementById('video-modal-next') as HTMLButtonElement | null;
+	const videoModalPlayer = document.getElementById('video-modal-player') as HTMLVideoElement | null;
+	const videoModalCount = document.getElementById('video-modal-count');
+	const videoModalTitle = document.getElementById('video-modal-title');
+	const videoModalEventLabel = document.getElementById('video-modal-event-label');
+	const videoModalEventGroup = document.getElementById('video-modal-event-group');
+	const videoModalEvent = document.getElementById('video-modal-event');
+	const videoModalShortInfoGroup = document.getElementById('video-modal-short-info-group');
+	const videoModalShortInfo = document.getElementById('video-modal-short-info');
+	const videoModalDescriptionGroup = document.getElementById('video-modal-description-group');
+	const videoModalDescription = document.getElementById('video-modal-description');
+	const videoCards = document.querySelectorAll<HTMLElement>('[data-video-index]');
+	const videoItems = videoModal ? JSON.parse(videoModal.dataset.videos || '[]') as VideoModalItem[] : [];
+	const websiteModal = document.getElementById('website-modal');
+	const websiteModalClose = document.getElementById('website-modal-close');
+	const websiteModalBackdrop = document.getElementById('website-modal-backdrop');
+	const websiteModalFrame = document.getElementById('website-modal-frame') as HTMLIFrameElement | null;
+	const websiteModalTitle = document.getElementById('website-modal-title');
+	const websiteModalHostname = document.getElementById('website-modal-hostname');
+	const websiteModalBrowserHost = document.getElementById('website-modal-browser-host');
+	const websiteModalContentType = document.getElementById('website-modal-content-type');
+	const websiteModalUrl = document.getElementById('website-modal-url');
+	const websiteModalLink = document.getElementById('website-modal-link') as HTMLAnchorElement | null;
+	const websiteModalShortInfoGroup = document.getElementById('website-modal-short-info-group');
+	const websiteModalShortInfo = document.getElementById('website-modal-short-info');
+	const websiteModalDescriptionGroup = document.getElementById('website-modal-description-group');
+	const websiteModalDescription = document.getElementById('website-modal-description');
+	const websiteModalFavicon = document.getElementById('website-modal-favicon') as HTMLImageElement | null;
+	const websiteModalFaviconFallback = document.getElementById('website-modal-favicon-fallback');
+	const websiteCards = document.querySelectorAll<HTMLElement>('[data-website-index]');
+	const websiteItems = websiteModal ? JSON.parse(websiteModal.dataset.websites || '[]') as WebsiteModalItem[] : [];
 
 	let activeFlyerIndex = 0;
 	let flyerModalOpen = false;
+	let activeVideoIndex = 0;
+	let videoModalOpen = false;
+	let websiteModalOpen = false;
 	let previousBodyOverflow = '';
 	let lastFlyerTrigger: HTMLElement | null = null;
+	let lastVideoTrigger: HTMLElement | null = null;
+	let lastWebsiteTrigger: HTMLElement | null = null;
+
+	const lockBodyScroll = () => {
+		previousBodyOverflow = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+	};
+
+	const unlockBodyScroll = () => {
+		document.body.style.overflow = previousBodyOverflow;
+	};
 
 	const setOptionalContent = (
 		group: HTMLElement | null,
@@ -510,8 +896,7 @@ console.log(flyers, videos, previews);
 		if (!flyerModal || flyerItems.length === 0) return;
 
 		updateFlyerModal(index);
-		previousBodyOverflow = document.body.style.overflow;
-		document.body.style.overflow = 'hidden';
+		lockBodyScroll();
 		flyerModal.classList.remove('hidden');
 		flyerModal.classList.add('flex');
 		flyerModal.setAttribute('aria-hidden', 'false');
@@ -526,7 +911,7 @@ console.log(flyers, videos, previews);
 		flyerModal.classList.add('hidden');
 		flyerModal.classList.remove('flex');
 		flyerModal.setAttribute('aria-hidden', 'true');
-		document.body.style.overflow = previousBodyOverflow;
+		unlockBodyScroll();
 		flyerModalOpen = false;
 		lastFlyerTrigger?.focus();
 	};
@@ -535,6 +920,144 @@ console.log(flyers, videos, previews);
 		const nextIndex = activeFlyerIndex + direction;
 		if (nextIndex < 0 || nextIndex >= flyerItems.length) return;
 		updateFlyerModal(nextIndex);
+	};
+
+	const updateVideoModal = (index: number) => {
+		if (!videoModalPlayer || !videoModalTitle || videoItems.length === 0) return;
+
+		const video = videoItems[index];
+		if (!video) return;
+
+		activeVideoIndex = index;
+		videoModalPlayer.pause();
+		videoModalPlayer.src = video.url;
+		videoModalPlayer.poster = video.thumbnail_url || '';
+		videoModalPlayer.load();
+		videoModalTitle.textContent = video.name?.trim() || 'Untitled video';
+
+		if (videoModalCount) {
+			videoModalCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(videoItems.length).padStart(2, '0')}`;
+		}
+
+		if (videoModalEventLabel) {
+			videoModalEventLabel.textContent = video.event_title?.trim() || 'Video showcase';
+		}
+
+		setOptionalContent(videoModalEventGroup, videoModalEvent, video.event_title);
+		setOptionalContent(videoModalShortInfoGroup, videoModalShortInfo, video.short_info);
+		setOptionalContent(videoModalDescriptionGroup, videoModalDescription, video.description);
+
+		videoModalPrev?.toggleAttribute('disabled', index === 0);
+		videoModalNext?.toggleAttribute('disabled', index === videoItems.length - 1);
+	};
+
+	const openVideoModal = (index: number, trigger?: HTMLElement | null) => {
+		if (!videoModal || videoItems.length === 0) return;
+
+		updateVideoModal(index);
+		lockBodyScroll();
+		videoModal.classList.remove('hidden');
+		videoModal.classList.add('flex');
+		videoModal.setAttribute('aria-hidden', 'false');
+		videoModalOpen = true;
+		lastVideoTrigger = trigger || null;
+		videoModalClose?.focus();
+		videoModalPlayer?.play().catch(() => {});
+	};
+
+	const closeVideoModal = () => {
+		if (!videoModal || !videoModalOpen) return;
+
+		videoModal.classList.add('hidden');
+		videoModal.classList.remove('flex');
+		videoModal.setAttribute('aria-hidden', 'true');
+		if (videoModalPlayer) {
+			videoModalPlayer.pause();
+			videoModalPlayer.removeAttribute('src');
+			videoModalPlayer.load();
+			videoModalPlayer.poster = '';
+		}
+		unlockBodyScroll();
+		videoModalOpen = false;
+		lastVideoTrigger?.focus();
+	};
+
+	const moveVideoModal = (direction: number) => {
+		const nextIndex = activeVideoIndex + direction;
+		if (nextIndex < 0 || nextIndex >= videoItems.length) return;
+		updateVideoModal(nextIndex);
+		videoModalPlayer?.play().catch(() => {});
+	};
+
+	const updateWebsiteModal = (index: number) => {
+		if (
+			!websiteModalFrame ||
+			!websiteModalTitle ||
+			!websiteModalHostname ||
+			!websiteModalContentType ||
+			!websiteModalUrl ||
+			websiteItems.length === 0
+		) return;
+
+		const website = websiteItems[index];
+		if (!website) return;
+
+		websiteModalFrame.src = website.url;
+		websiteModalFrame.title = website.title || website.hostname;
+		websiteModalTitle.textContent = website.title?.trim() || website.hostname;
+		websiteModalHostname.textContent = website.hostname;
+		if (websiteModalBrowserHost) {
+			websiteModalBrowserHost.textContent = website.url;
+		}
+		websiteModalContentType.textContent = website.content_type;
+		websiteModalUrl.textContent = website.url;
+
+		if (websiteModalLink) {
+			websiteModalLink.href = website.url;
+		}
+
+		if (websiteModalFavicon) {
+			const faviconUrl = website.favicon_url?.trim();
+			if (faviconUrl) {
+				websiteModalFavicon.src = faviconUrl;
+				websiteModalFavicon.hidden = false;
+				websiteModalFaviconFallback?.setAttribute('hidden', '');
+			} else {
+				websiteModalFavicon.src = '';
+				websiteModalFavicon.hidden = true;
+				websiteModalFaviconFallback?.removeAttribute('hidden');
+			}
+		}
+
+		setOptionalContent(websiteModalShortInfoGroup, websiteModalShortInfo, website.short_info);
+		setOptionalContent(websiteModalDescriptionGroup, websiteModalDescription, website.description);
+	};
+
+	const openWebsiteModal = (index: number, trigger?: HTMLElement | null) => {
+		if (!websiteModal || websiteItems.length === 0) return;
+
+		updateWebsiteModal(index);
+		lockBodyScroll();
+		websiteModal.classList.remove('hidden');
+		websiteModal.classList.add('flex');
+		websiteModal.setAttribute('aria-hidden', 'false');
+		websiteModalOpen = true;
+		lastWebsiteTrigger = trigger || null;
+		websiteModalClose?.focus();
+	};
+
+	const closeWebsiteModal = () => {
+		if (!websiteModal || !websiteModalOpen) return;
+
+		websiteModal.classList.add('hidden');
+		websiteModal.classList.remove('flex');
+		websiteModal.setAttribute('aria-hidden', 'true');
+		if (websiteModalFrame) {
+			websiteModalFrame.src = '';
+		}
+		unlockBodyScroll();
+		websiteModalOpen = false;
+		lastWebsiteTrigger?.focus();
 	};
 
 	flyerCards.forEach(card => {
@@ -551,7 +1074,67 @@ console.log(flyers, videos, previews);
 	flyerModalPrev?.addEventListener('click', () => moveFlyerModal(-1));
 	flyerModalNext?.addEventListener('click', () => moveFlyerModal(1));
 
-	document.addEventListener('keydown', (event) => {
+	videoCards.forEach(card => {
+		card.addEventListener('click', () => {
+			const target = card as HTMLElement;
+			const index = Number(target.dataset.videoIndex);
+			if (Number.isNaN(index)) return;
+			openVideoModal(index, target);
+		});
+	});
+
+	videoModalClose?.addEventListener('click', closeVideoModal);
+	videoModalBackdrop?.addEventListener('click', closeVideoModal);
+	videoModalPrev?.addEventListener('click', () => moveVideoModal(-1));
+	videoModalNext?.addEventListener('click', () => moveVideoModal(1));
+
+	websiteCards.forEach(card => {
+		card.addEventListener('click', () => {
+			const target = card as HTMLElement;
+			const index = Number(target.dataset.websiteIndex);
+			if (Number.isNaN(index)) return;
+			openWebsiteModal(index, target);
+		});
+
+		card.addEventListener('keydown', (event: KeyboardEvent) => {
+			if (event.key !== 'Enter' && event.key !== ' ') return;
+			event.preventDefault();
+			const target = card as HTMLElement;
+			const index = Number(target.dataset.websiteIndex);
+			if (Number.isNaN(index)) return;
+			openWebsiteModal(index, target);
+		});
+	});
+
+	websiteModalClose?.addEventListener('click', closeWebsiteModal);
+	websiteModalBackdrop?.addEventListener('click', closeWebsiteModal);
+
+	document.addEventListener('keydown', (event: KeyboardEvent) => {
+		if (videoModalOpen) {
+			if (event.key === 'Escape') {
+				closeVideoModal();
+				return;
+			}
+
+			if (event.key === 'ArrowLeft') {
+				event.preventDefault();
+				moveVideoModal(-1);
+			}
+
+			if (event.key === 'ArrowRight') {
+				event.preventDefault();
+				moveVideoModal(1);
+			}
+			return;
+		}
+
+		if (websiteModalOpen) {
+			if (event.key === 'Escape') {
+				closeWebsiteModal();
+			}
+			return;
+		}
+
 		if (!flyerModalOpen) return;
 
 		if (event.key === 'Escape') {

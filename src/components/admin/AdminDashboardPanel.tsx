@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	apiClient,
 	clearAuthSession,
@@ -169,6 +169,365 @@ function formatCell(v: unknown): string {
 
 function inputClass() {
 	return 'mt-1 w-full rounded-lg border border-white/20 bg-black/50 px-3 py-2 text-sm text-white outline-none focus:border-nelf-pink/70';
+}
+
+function formatVideoTime(seconds: number): string {
+	if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
+	const mins = Math.floor(seconds / 60);
+	const secs = Math.floor(seconds % 60);
+	return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+function slugifyFilenamePart(value: string): string {
+	return value
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 40) || 'video';
+}
+
+export function VideoThumbnailGenerator({
+	initialUrl,
+	showUseFormUrlButton = true,
+	allowApplyToForm = true,
+}: {
+	initialUrl?: string;
+	showUseFormUrlButton?: boolean;
+	allowApplyToForm?: boolean;
+}) {
+	const rootRef = useRef<HTMLDivElement | null>(null);
+	const videoRef = useRef<HTMLVideoElement | null>(null);
+	const localVideoUrlRef = useRef<string | null>(null);
+	const generatedImageUrlRef = useRef<string | null>(null);
+	const generatedFileRef = useRef<File | null>(null);
+
+	const [sourceUrl, setSourceUrl] = useState(initialUrl?.trim() ?? '');
+	const [videoSrc, setVideoSrc] = useState('');
+	const [sourceLabel, setSourceLabel] = useState(initialUrl?.trim() ?? '');
+	const [status, setStatus] = useState('Load a video URL or upload a video file to capture a thumbnail.');
+	const [error, setError] = useState('');
+	const [duration, setDuration] = useState(0);
+	const [seekTime, setSeekTime] = useState(0);
+	const [previewUrl, setPreviewUrl] = useState('');
+	const [generatedFilename, setGeneratedFilename] = useState('video-thumbnail.jpg');
+	const [videoReady, setVideoReady] = useState(false);
+
+	useEffect(() => {
+		return () => {
+			if (localVideoUrlRef.current) URL.revokeObjectURL(localVideoUrlRef.current);
+			if (generatedImageUrlRef.current) URL.revokeObjectURL(generatedImageUrlRef.current);
+		};
+	}, []);
+
+	const clearGenerated = useCallback(() => {
+		if (generatedImageUrlRef.current) {
+			URL.revokeObjectURL(generatedImageUrlRef.current);
+			generatedImageUrlRef.current = null;
+		}
+		generatedFileRef.current = null;
+		setPreviewUrl('');
+	}, []);
+
+	const resetVideoState = useCallback(() => {
+		setVideoReady(false);
+		setDuration(0);
+		setSeekTime(0);
+		clearGenerated();
+	}, [clearGenerated]);
+
+	const loadRemoteVideo = useCallback(
+		(url: string) => {
+			const trimmed = url.trim();
+			if (!trimmed) {
+				setError('Enter a video URL first.');
+				return;
+			}
+			if (localVideoUrlRef.current) {
+				URL.revokeObjectURL(localVideoUrlRef.current);
+				localVideoUrlRef.current = null;
+			}
+			resetVideoState();
+			setVideoSrc(trimmed);
+			setSourceLabel(trimmed);
+			setError('');
+			setStatus('Loading remote video…');
+		},
+		[resetVideoState],
+	);
+
+	const loadFromFormUrl = useCallback(() => {
+		const form = rootRef.current?.closest('form');
+		const field = form?.elements.namedItem('url');
+		if (!(field instanceof HTMLInputElement) || !field.value.trim()) {
+			setError('The video URL field above is empty.');
+			return;
+		}
+		setSourceUrl(field.value);
+		loadRemoteVideo(field.value);
+	}, [loadRemoteVideo]);
+
+	const handleVideoFile = useCallback(
+		(event: React.ChangeEvent<HTMLInputElement>) => {
+			const file = event.target.files?.[0];
+			if (!file) return;
+			if (localVideoUrlRef.current) URL.revokeObjectURL(localVideoUrlRef.current);
+			const objectUrl = URL.createObjectURL(file);
+			localVideoUrlRef.current = objectUrl;
+			resetVideoState();
+			setVideoSrc(objectUrl);
+			setSourceLabel(file.name);
+			setError('');
+			setStatus(`Loaded local video: ${file.name}`);
+		},
+		[resetVideoState],
+	);
+
+	const handleLoadedMetadata = useCallback(() => {
+		const video = videoRef.current;
+		if (!video) return;
+		const nextDuration = Number.isFinite(video.duration) ? video.duration : 0;
+		setVideoReady(true);
+		setDuration(nextDuration);
+		setSeekTime(video.currentTime || 0);
+		setStatus('Choose a frame and capture it.');
+	}, []);
+
+	const handleVideoError = useCallback(() => {
+		setVideoReady(false);
+		setError('Could not load this video. If it is remote, make sure the URL is valid and allows cross-origin access.');
+		setStatus('');
+	}, []);
+
+	const handleSeek = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+		const nextTime = Number(event.target.value);
+		setSeekTime(nextTime);
+		if (videoRef.current) {
+			videoRef.current.currentTime = nextTime;
+		}
+	}, []);
+
+	const handleTimeUpdate = useCallback(() => {
+		if (videoRef.current) {
+			setSeekTime(videoRef.current.currentTime);
+		}
+	}, []);
+
+	const applyGeneratedToThumbnailField = useCallback(() => {
+		const form = rootRef.current?.closest('form');
+		const field = form?.elements.namedItem('thumbnail');
+		const generated = generatedFileRef.current;
+		if (!(field instanceof HTMLInputElement) || !generated) {
+			setError('Generate an image first before applying it to the Thumbnail field.');
+			return;
+		}
+		const transfer = new DataTransfer();
+		transfer.items.add(generated);
+		field.files = transfer.files;
+		field.dispatchEvent(new Event('change', { bubbles: true }));
+		setError('');
+		setStatus('Generated image attached to the Thumbnail field.');
+	}, []);
+
+	const captureFrame = useCallback(() => {
+		const video = videoRef.current;
+		if (!video || !videoReady) {
+			setError('Load a video first before capturing a frame.');
+			return;
+		}
+
+		try {
+			const width = video.videoWidth || 1280;
+			const height = video.videoHeight || 720;
+			const canvas = document.createElement('canvas');
+			canvas.width = width;
+			canvas.height = height;
+			const ctx = canvas.getContext('2d');
+			if (!ctx) {
+				setError('Could not create a canvas for thumbnail generation.');
+				return;
+			}
+
+			ctx.drawImage(video, 0, 0, width, height);
+			canvas.toBlob(
+				(blob) => {
+					if (!blob) {
+						setError('Could not generate an image from this frame.');
+						return;
+					}
+					if (generatedImageUrlRef.current) URL.revokeObjectURL(generatedImageUrlRef.current);
+
+					const timestamp = formatVideoTime(video.currentTime).replace(':', '-');
+					const fileName = `${slugifyFilenamePart(sourceLabel)}-${timestamp}.jpg`;
+					const file = new File([blob], fileName, { type: 'image/jpeg' });
+					const objectUrl = URL.createObjectURL(file);
+
+					generatedFileRef.current = file;
+					generatedImageUrlRef.current = objectUrl;
+					setGeneratedFilename(fileName);
+					setPreviewUrl(objectUrl);
+					setError('');
+					setStatus('Thumbnail captured. You can download it or apply it to the form.');
+				},
+				'image/jpeg',
+				0.92,
+			);
+		} catch {
+			setError('Frame capture failed. Remote videos must allow canvas access (CORS) before a thumbnail can be exported.');
+		}
+	}, [sourceLabel, videoReady]);
+
+	return (
+		<div ref={rootRef} className="space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+			<div>
+				<p className="text-xs uppercase tracking-widest text-white/45">Thumbnail generator</p>
+				<p className="mt-2 text-sm text-white/70">Capture a frame from a video URL or a local video file, then download it or use it as the form thumbnail.</p>
+			</div>
+
+			<div className="space-y-3">
+				<div>
+					<label className="block text-sm text-white/75" htmlFor="thumbnail-generator-url">
+						Video URL source
+					</label>
+					<div className="mt-1 flex flex-col gap-2 sm:flex-row">
+						<input
+							className={`${inputClass()} mt-0 flex-1`}
+							id="thumbnail-generator-url"
+							type="url"
+							placeholder="https://example.com/video.mp4"
+							value={sourceUrl}
+							onChange={(event) => setSourceUrl(event.target.value)}
+						/>
+						<button
+							type="button"
+							className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/5"
+							onClick={() => loadRemoteVideo(sourceUrl)}
+						>
+							Load URL
+						</button>
+						{showUseFormUrlButton ? (
+							<button
+								type="button"
+								className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/5"
+								onClick={loadFromFormUrl}
+							>
+								Use URL above
+							</button>
+						) : null}
+					</div>
+				</div>
+
+				<div>
+					<label className="block text-sm text-white/75" htmlFor="thumbnail-generator-file">
+						Or upload a local video
+					</label>
+					<input
+						className="mt-1 w-full text-sm text-white/70 file:mr-3 file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-white"
+						id="thumbnail-generator-file"
+						type="file"
+						accept="video/*"
+						onChange={handleVideoFile}
+					/>
+				</div>
+			</div>
+
+			{error ? <p className="text-sm text-red-400">{error}</p> : null}
+			{status ? <p className="text-xs text-white/45">{status}</p> : null}
+
+			<div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
+				{videoSrc ? (
+					<video
+						ref={videoRef}
+						src={videoSrc}
+						crossOrigin="anonymous"
+						className="aspect-video w-full bg-black"
+						controls
+						playsInline
+						preload="metadata"
+						onLoadedMetadata={handleLoadedMetadata}
+						onError={handleVideoError}
+						onTimeUpdate={handleTimeUpdate}
+					/>
+				) : (
+					<div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/35">
+						Load a video source to preview it and capture a frame.
+					</div>
+				)}
+			</div>
+
+			{videoReady ? (
+				<div className="space-y-3 rounded-xl border border-white/10 bg-black/30 p-4">
+					<div className="flex items-center justify-between gap-3 text-xs uppercase tracking-widest text-white/45">
+						<span>Capture time</span>
+						<span>
+							{formatVideoTime(seekTime)} / {formatVideoTime(duration)}
+						</span>
+					</div>
+					<input className="w-full accent-nelf-pink" type="range" min={0} max={duration || 0} step={0.1} value={Math.min(seekTime, duration || 0)} onChange={handleSeek} />
+					<div className="flex flex-wrap gap-2">
+						<button
+							type="button"
+							className="rounded-lg border border-white/70 bg-white px-4 py-2 text-sm font-medium text-gray-900 transition-transform hover:-translate-y-0.5"
+							onClick={captureFrame}
+						>
+							Capture frame
+						</button>
+						<button
+							type="button"
+							className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/5"
+							onClick={() => {
+								const video = videoRef.current;
+								if (!video) return;
+								video.currentTime = Math.max(0, video.currentTime - 1);
+							}}
+						>
+							Back 1s
+						</button>
+						<button
+							type="button"
+							className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/5"
+							onClick={() => {
+								const video = videoRef.current;
+								if (!video) return;
+								video.currentTime = Math.min(duration, video.currentTime + 1);
+							}}
+						>
+							Forward 1s
+						</button>
+					</div>
+				</div>
+			) : null}
+
+			{previewUrl ? (
+				<div className="space-y-3 rounded-xl border border-white/10 bg-black/30 p-4">
+					<div className="flex items-center justify-between gap-3">
+						<p className="text-sm font-medium text-white">Generated image</p>
+						<p className="truncate text-xs text-white/45">{generatedFilename}</p>
+					</div>
+					<img src={previewUrl} alt="Generated thumbnail preview" className="aspect-video w-full rounded-lg object-cover" />
+					<div className="flex flex-wrap gap-2">
+						{allowApplyToForm ? (
+							<button
+								type="button"
+								className="rounded-lg border border-white/25 px-4 py-2 text-sm hover:bg-white/5"
+								onClick={applyGeneratedToThumbnailField}
+							>
+								Use as thumbnail
+							</button>
+						) : null}
+						<a
+							href={previewUrl}
+							download={generatedFilename}
+							className="rounded-lg border border-white/70 bg-white px-4 py-2 text-sm font-medium text-gray-900 transition-transform hover:-translate-y-0.5"
+						>
+							Download image
+						</a>
+					</div>
+				</div>
+			) : null}
+
+			<p className="text-xs text-white/35">Remote video URLs must allow canvas access for thumbnail export. Local video files work without that restriction.</p>
+		</div>
+	);
 }
 
 function EntityFields({
@@ -350,6 +709,7 @@ function EntityFields({
 							type="file"
 						/>
 					</div>
+					<VideoThumbnailGenerator initialUrl={String(d.url ?? '')} />
 					<div className="flex items-center gap-2">
 						<input className="h-4 w-4 accent-nelf-pink" type="checkbox" id="is_active" name="is_active" defaultChecked={activeDefault} />
 						<label htmlFor="is_active" className="text-sm text-white/80">
