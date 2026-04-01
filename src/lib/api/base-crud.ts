@@ -16,8 +16,7 @@ export interface CrudService<T, CreateRequest, UpdateRequest> {
 }
 
 export abstract class BaseCrudService<T, CreateRequest, UpdateRequest>
-  implements CrudService<T, CreateRequest, UpdateRequest>
-{
+  implements CrudService<T, CreateRequest, UpdateRequest> {
   protected readonly endpoint: string;
 
   constructor(endpoint: string) {
@@ -67,6 +66,7 @@ export abstract class BaseCrudService<T, CreateRequest, UpdateRequest>
 
     try {
       const response = await fetch(url, {
+        cache: options.cache || 'no-store',
         ...options,
         headers: this.buildFetchHeaders(options),
         signal: controller.signal,

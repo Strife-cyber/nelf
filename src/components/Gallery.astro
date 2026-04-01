@@ -1,0 +1,715 @@
+---
+const { flyers = [], videos = [], previews = [] } = Astro.props;
+
+const allItems = [
+  ...((flyers as any[]).map((f: any) => ({
+    url: f.url, image: f.url, name: f.name,
+    description: f.description, type: 'image',
+  }))),
+  ...((videos as any[]).map((v: any) => ({
+    url: v.url, image: v.thumbnail_url || null, name: v.name,
+    description: v.description, type: 'video',
+  }))),
+  ...((previews as any[]).map((p: any) => ({
+    url: p.url, image: p.image_url || null, name: p.title,
+    description: p.description, type: 'preview',
+  }))),
+];
+
+const galleryData = JSON.stringify(allItems);
+---
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+
+<div
+  id="cinematic-gallery"
+  class="gallery-root"
+  data-items={galleryData}
+  role="region"
+  aria-label="Media Gallery"
+>
+
+  <!-- ── Progress bar ─────────────────────────────── -->
+  <div class="g-progress-track" aria-hidden="true">
+    <div id="g-progress-bar" class="g-progress-fill"></div>
+  </div>
+
+  <!-- ── Main stage ───────────────────────────────── -->
+  <div id="g-stage" class="g-stage">
+    <!-- slides injected by JS -->
+  </div>
+
+  <!-- ── Gradient overlay ─────────────────────────── -->
+  <div class="g-overlay-left"  aria-hidden="true"></div>
+  <div class="g-overlay-btm"   aria-hidden="true"></div>
+
+  <!-- ── Index counter ────────────────────────────── -->
+  <div class="g-counter" aria-hidden="true">
+    <span id="g-idx-big" class="g-idx-big">01</span>
+    <span class="g-sep"></span>
+    <span id="g-tot-sm" class="g-tot-sm">01</span>
+  </div>
+
+  <!-- ── Caption panel ────────────────────────────── -->
+  <div id="g-caption" class="g-caption">
+    <p id="g-title" class="g-title"></p>
+    <p id="g-desc"  class="g-desc"></p>
+  </div>
+
+  <!-- ── Arrows ───────────────────────────────────── -->
+  <button id="g-prev" class="g-arrow g-arrow-prev" aria-label="Previous">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </button>
+  <button id="g-next" class="g-arrow g-arrow-next" aria-label="Next">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <path d="M9 18l6-6-6-6"/>
+    </svg>
+  </button>
+
+  <!-- ── Auto-play toggle ─────────────────────────── -->
+  <button id="g-play-btn" class="g-play-btn" aria-label="Toggle autoplay">
+    <svg id="g-play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+    <svg id="g-pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+    </svg>
+  </button>
+
+  <!-- ── Thumbnail strip ──────────────────────────── -->
+  <div id="g-strip" class="g-strip" role="listbox" aria-label="Gallery items">
+    <!-- thumbs injected by JS -->
+  </div>
+
+  <!-- ── Empty state ──────────────────────────────── -->
+  <div id="g-empty" class="g-empty" hidden>
+    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14
+           M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+    <p>No creations yet</p>
+  </div>
+
+</div>
+
+<!-- ════════════════════ STYLES ════════════════════ -->
+<style>
+  /* ── Tokens ───────────────────────────────── */
+  .gallery-root {
+    --g-accent:   #c8a96e;
+    --g-accent2:  #e8c98a;
+    --g-white:    #f4f0e8;
+    --g-dim:      rgba(244,240,232,0.45);
+    --g-muted:    rgba(244,240,232,0.25);
+    --g-font-display: 'Cormorant Garamond', Georgia, serif;
+    --g-font-mono:    'DM Mono', 'Courier New', monospace;
+    --g-duration: 800ms;
+    --g-ease:     cubic-bezier(0.76, 0, 0.24, 1);
+  }
+
+  /* ── Shell ────────────────────────────────── */
+  .gallery-root {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #070707;
+    font-family: var(--g-font-mono);
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+
+  /* ── Progress bar ─────────────────────────── */
+  .g-progress-track {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    z-index: 30;
+  }
+  .g-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--g-accent);
+    transition: width 0.08s linear;
+    transform-origin: left;
+  }
+
+  /* ── Stage & slides ───────────────────────── */
+  .g-stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .g-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity var(--g-duration) var(--g-ease);
+    will-change: opacity;
+  }
+  .g-slide.is-active  { opacity: 1; z-index: 2; }
+  .g-slide.is-leaving { opacity: 0; z-index: 1; }
+
+  .g-slide-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scale(1.06);
+    transition: transform 8s ease;
+  }
+  .g-slide.is-active .g-slide-img { transform: scale(1.0); }
+
+  .g-slide-video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  /* ── Overlays ─────────────────────────────── */
+  .g-overlay-left {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      rgba(7,7,7,0.82) 0%,
+      rgba(7,7,7,0.35) 38%,
+      transparent 65%
+    );
+  }
+  .g-overlay-btm {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 55%;
+    z-index: 5;
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      rgba(7,7,7,0.88) 0%,
+      rgba(7,7,7,0.45) 50%,
+      transparent 100%
+    );
+  }
+
+  /* ── Counter ──────────────────────────────── */
+  .g-counter {
+    position: absolute;
+    left: 2.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    pointer-events: none;
+  }
+  .g-idx-big {
+    font-family: var(--g-font-display);
+    font-weight: 300;
+    font-size: clamp(4rem, 10vw, 8rem);
+    line-height: 1;
+    color: var(--g-white);
+    letter-spacing: -0.02em;
+    transition: opacity 0.4s ease;
+  }
+  .g-sep {
+    display: block;
+    width: 2.5rem;
+    height: 1px;
+    background: var(--g-accent);
+    margin: 0.25rem 0;
+    transition: width 0.4s var(--g-ease);
+  }
+  .g-tot-sm {
+    font-family: var(--g-font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--g-dim);
+    font-weight: 300;
+  }
+
+  /* ── Caption ──────────────────────────────── */
+  .g-caption {
+    position: absolute;
+    left: 2.5rem;
+    bottom: 8.5rem;
+    z-index: 20;
+    max-width: min(36rem, 55vw);
+    pointer-events: none;
+  }
+  .g-title {
+    font-family: var(--g-font-display);
+    font-weight: 300;
+    font-style: italic;
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    line-height: 1.2;
+    color: var(--g-white);
+    margin: 0 0 0.5rem;
+    letter-spacing: 0.01em;
+    transition: opacity 0.35s ease, transform 0.45s var(--g-ease);
+  }
+  .g-desc {
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    color: var(--g-dim);
+    margin: 0;
+    line-height: 1.6;
+    text-transform: uppercase;
+    transition: opacity 0.35s ease 0.05s, transform 0.45s var(--g-ease) 0.05s;
+  }
+  .g-caption.is-changing .g-title,
+  .g-caption.is-changing .g-desc {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  /* ── Arrows ───────────────────────────────── */
+  .g-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    background: rgba(244,240,232,0.06);
+    border: 1px solid rgba(244,240,232,0.12);
+    color: var(--g-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s,
+      color 0.2s,
+      transform 0.2s var(--g-ease),
+      opacity 0.3s;
+    outline: none;
+  }
+  .g-arrow:hover {
+    background: rgba(200,169,110,0.15);
+    border-color: rgba(200,169,110,0.4);
+    color: var(--g-accent2);
+    transform: translateY(-50%) scale(1.08);
+  }
+  .g-arrow:active { transform: translateY(-50%) scale(0.95); }
+  .g-arrow-prev { left: 1.25rem; }
+  .g-arrow-next { right: 1.25rem; }
+  .g-arrow[disabled] { opacity: 0.2; pointer-events: none; }
+
+  /* ── Play/pause button ────────────────────── */
+  .g-play-btn {
+    position: absolute;
+    bottom: 7.5rem;
+    right: 1.5rem;
+    z-index: 25;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: rgba(244,240,232,0.06);
+    border: 1px solid rgba(244,240,232,0.12);
+    color: var(--g-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+    outline: none;
+  }
+  .g-play-btn:hover {
+    color: var(--g-accent);
+    border-color: rgba(200,169,110,0.3);
+    background: rgba(200,169,110,0.08);
+  }
+
+  /* ── Thumbnail strip ──────────────────────── */
+  .g-strip {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    z-index: 25;
+    height: 6rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0 2.5rem 1.1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .g-strip::-webkit-scrollbar { display: none; }
+
+  .g-thumb {
+    flex: 0 0 auto;
+    width: 4rem;
+    height: 3.5rem;
+    border-radius: 3px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid rgba(244,240,232,0.08);
+    position: relative;
+    transition:
+      transform 0.25s var(--g-ease),
+      border-color 0.25s,
+      opacity 0.25s;
+    opacity: 0.45;
+  }
+  .g-thumb:hover {
+    transform: translateY(-4px) scale(1.05);
+    opacity: 0.8;
+    border-color: rgba(244,240,232,0.25);
+  }
+  .g-thumb.is-active {
+    opacity: 1;
+    border-color: var(--g-accent);
+    transform: translateY(-6px) scale(1.08);
+  }
+  .g-thumb img,
+  .g-thumb .g-thumb-placeholder {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .g-thumb-placeholder {
+    background: #1a1a18;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .g-thumb-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(7,7,7,0.35);
+  }
+  .g-thumb-play svg { color: var(--g-white); opacity: 0.85; }
+
+  /* ── Empty ────────────────────────────────── */
+  .g-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: rgba(244,240,232,0.2);
+    font-family: var(--g-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    z-index: 50;
+  }
+
+  /* ── Responsive ───────────────────────────── */
+  @media (max-width: 640px) {
+    .g-counter   { left: 1.25rem; }
+    .g-caption   { left: 1.25rem; max-width: 90vw; bottom: 9rem; }
+    .g-strip     { padding: 0 1.25rem 1rem; }
+    .g-arrow-prev { left: 0.5rem; }
+    .g-arrow-next { right: 0.5rem; }
+    .g-play-btn  { right: 1rem; bottom: 8.25rem; }
+  }
+
+  /* ── Reduced motion ───────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .g-slide       { transition-duration: 120ms; }
+    .g-slide-img   { transition: none; }
+    .g-title, .g-desc { transition: none; }
+  }
+</style>
+
+<!-- ════════════════════ SCRIPT ════════════════════ -->
+<script>
+(function () {
+  const root = document.getElementById('cinematic-gallery');
+  if (!root) return;
+
+  const items = JSON.parse(root.dataset.items || '[]');
+  if (items.length === 0) {
+    document.getElementById('g-empty')?.removeAttribute('hidden');
+    return;
+  }
+
+  // ── DOM refs ─────────────────────────────────────────────
+  const stage     = document.getElementById('g-stage');
+  const strip     = document.getElementById('g-strip');
+  const caption   = document.getElementById('g-caption');
+  const titleEl   = document.getElementById('g-title');
+  const descEl    = document.getElementById('g-desc');
+  const idxBig    = document.getElementById('g-idx-big');
+  const totSm     = document.getElementById('g-tot-sm');
+  const prevBtn   = document.getElementById('g-prev');
+  const nextBtn   = document.getElementById('g-next');
+  const playBtn   = document.getElementById('g-play-btn');
+  const playIcon  = document.getElementById('g-play-icon');
+  const pauseIcon = document.getElementById('g-pause-icon');
+  const progressBar = document.getElementById('g-progress-bar');
+
+  // ── State ─────────────────────────────────────────────────
+  let current     = 0;
+  let transitioning = false;
+  let autoPlay    = true;
+  let autoTimer: ReturnType<typeof setInterval> | null = null;
+  let progressTimer: ReturnType<typeof requestAnimationFrame> | null = null;
+  let progressStart = 0;
+  const AUTO_DELAY = 5000; // ms per slide
+
+  const pad = (n: number) => String(n + 1).padStart(2, '0');
+  totSm!.textContent = pad(items.length - 1);
+
+  // ── Build slides ──────────────────────────────────────────
+  const slides: HTMLElement[] = [];
+  const videoEls: (HTMLVideoElement | null)[] = [];
+
+  items.forEach((item: any, i: number) => {
+    const slide = document.createElement('div');
+    slide.className = 'g-slide';
+    slide.dataset.index = String(i);
+
+    const isVid = item.url?.match(/\.(mp4|webm|ogg)$/i);
+
+    if (isVid) {
+      const video = document.createElement('video');
+      video.src = item.url;
+      video.className = 'g-slide-video';
+      video.loop = video.muted = video.playsInline = true;
+      video.autoplay = false;
+      slide.appendChild(video);
+      videoEls.push(video);
+    } else {
+      const img = document.createElement('img');
+      img.src = item.image || item.url;
+      img.className = 'g-slide-img';
+      img.alt = item.name || '';
+      img.loading = i === 0 ? 'eager' : 'lazy';
+      slide.appendChild(img);
+      videoEls.push(null);
+    }
+
+    stage!.appendChild(slide);
+    slides.push(slide);
+  });
+
+  // ── Build thumbnails ──────────────────────────────────────
+  const thumbEls: HTMLElement[] = [];
+
+  items.forEach((item: any, i: number) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'g-thumb';
+    thumb.setAttribute('role', 'option');
+    thumb.setAttribute('aria-label', item.name || `Item ${i + 1}`);
+    thumb.dataset.index = String(i);
+
+    const imgSrc = item.image || (!item.url?.match(/\.(mp4|webm|ogg)$/i) ? item.url : null);
+
+    if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = '';
+      img.loading = 'lazy';
+      thumb.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'g-thumb-placeholder';
+      ph.innerHTML = `<svg width="16" height="16" fill="none" stroke="rgba(244,240,232,0.3)"
+        viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.5"/>
+        <circle cx="8.5" cy="8.5" r="1.5" stroke-width="1.5"/>
+        <path stroke-width="1.5" d="M21 15l-5-5L5 21"/></svg>`;
+      thumb.appendChild(ph);
+    }
+
+    if (item.type === 'video' || item.url?.match(/\.(mp4|webm|ogg)$/i)) {
+      const playMark = document.createElement('div');
+      playMark.className = 'g-thumb-play';
+      playMark.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/></svg>`;
+      thumb.appendChild(playMark);
+    }
+
+    thumb.addEventListener('click', () => goTo(i));
+    strip!.appendChild(thumb);
+    thumbEls.push(thumb);
+  });
+
+  // ── Navigation ────────────────────────────────────────────
+  function goTo(next: number, skipAutoReset = false) {
+    if (transitioning) return;
+    if (next === current && slides[current].classList.contains('is-active')) return;
+    if (next < 0 || next >= items.length) return;
+
+    transitioning = true;
+
+    // Pause outgoing video
+    if (videoEls[current]) videoEls[current]!.pause();
+
+    // Caption fade-out
+    caption!.classList.add('is-changing');
+
+    // Swap slides
+    slides[current].classList.remove('is-active');
+    slides[current].classList.add('is-leaving');
+    slides[next].classList.add('is-active');
+
+    const prev = current;
+    current = next;
+
+    // Clean up outgoing after transition
+    const dur = parseInt(
+      getComputedStyle(root!).getPropertyValue('--g-duration') || '800'
+    );
+    setTimeout(() => {
+      slides[prev].classList.remove('is-leaving');
+      transitioning = false;
+    }, dur + 50);
+
+    // Play incoming video
+    if (videoEls[next]) {
+      videoEls[next]!.currentTime = 0;
+      videoEls[next]!.play().catch(() => {});
+    }
+
+    // Update UI
+    updateUI(next);
+
+    // Caption re-enter
+    setTimeout(() => caption!.classList.remove('is-changing'), 80);
+
+    // Thumb scroll
+    thumbEls[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+    // Arrow/auto logic
+    if (!skipAutoReset) resetAuto();
+  }
+
+  function updateUI(idx: number) {
+    const item = items[idx];
+    idxBig!.textContent     = pad(idx);
+    titleEl!.textContent    = item.name || '';
+    descEl!.textContent     = item.description || '';
+    prevBtn!.toggleAttribute('disabled', idx === 0);
+    nextBtn!.toggleAttribute('disabled', idx === items.length - 1);
+
+    thumbEls.forEach((t, i) =>
+      t.classList.toggle('is-active', i === idx));
+  }
+
+  // ── Auto-play & progress ──────────────────────────────────
+  function startProgress() {
+    if (progressTimer) cancelAnimationFrame(progressTimer);
+    progressStart = performance.now();
+
+    function tick(now: number) {
+      const elapsed = now - progressStart;
+      const pct     = Math.min((elapsed / AUTO_DELAY) * 100, 100);
+      progressBar!.style.width = pct + '%';
+      if (elapsed < AUTO_DELAY) {
+        progressTimer = requestAnimationFrame(tick);
+      }
+    }
+    progressTimer = requestAnimationFrame(tick);
+  }
+
+  function stopProgress() {
+    if (progressTimer) {
+      cancelAnimationFrame(progressTimer);
+      progressTimer = null;
+    }
+    progressBar!.style.width = '0%';
+  }
+
+  function startAuto() {
+    stopAuto();
+    startProgress();
+    autoTimer = setInterval(() => {
+      const next = (current + 1) % items.length;
+      goTo(next, true);
+      startProgress();
+    }, AUTO_DELAY);
+  }
+
+  function stopAuto() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    stopProgress();
+  }
+
+  function resetAuto() {
+    if (autoPlay) startAuto();
+  }
+
+  function toggleAutoPlay() {
+    autoPlay = !autoPlay;
+    playIcon!.style.display  = autoPlay ? 'none' : '';
+    pauseIcon!.style.display = autoPlay ? ''     : 'none';
+    autoPlay ? startAuto() : stopAuto();
+  }
+
+  // ── Input handlers ────────────────────────────────────────
+  prevBtn!.addEventListener('click', () => goTo(current - 1));
+  nextBtn!.addEventListener('click', () => goTo(current + 1));
+  playBtn!.addEventListener('click', toggleAutoPlay);
+
+  // Keyboard
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+    if (e.key === ' ') { e.preventDefault(); toggleAutoPlay(); }
+  });
+
+  // Scroll wheel (debounced)
+  let wheelLock = false;
+  root.addEventListener('wheel', (e) => {
+    if (wheelLock) return;
+    if (Math.abs(e.deltaY) < 15) return;
+    wheelLock = true;
+    setTimeout(() => { wheelLock = false; }, 750);
+    goTo(current + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: true });
+
+  // Touch swipe
+  let tx0 = 0, ty0 = 0;
+  root.addEventListener('touchstart', (e) => {
+    tx0 = e.touches[0].clientX;
+    ty0 = e.touches[0].clientY;
+  }, { passive: true });
+  root.addEventListener('touchend', (e) => {
+    const dx = tx0 - e.changedTouches[0].clientX;
+    const dy = ty0 - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 40) {
+      goTo(current + (dy > 0 ? 1 : -1));
+    } else if (Math.abs(dx) > 40) {
+      goTo(current + (dx > 0 ? 1 : -1));
+    }
+  }, { passive: true });
+
+  // Pause auto on hover
+  root.addEventListener('mouseenter', () => { if (autoPlay) stopProgress(); });
+  root.addEventListener('mouseleave', () => { if (autoPlay) startProgress(); });
+
+  // ── Init ──────────────────────────────────────────────────
+  slides[0].classList.add('is-active');
+  updateUI(0);
+  thumbEls[0]?.classList.add('is-active');
+
+  // Pause icon = playing state
+  playIcon!.style.display  = 'none';
+  pauseIcon!.style.display = '';
+
+  if (items.length > 1) startAuto();
+
+  // Preload first video
+  if (videoEls[0]) videoEls[0]!.play().catch(() => {});
+})();
+</script>

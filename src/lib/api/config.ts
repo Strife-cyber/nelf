@@ -15,7 +15,7 @@ class ApiClient {
 
   constructor(config: ApiConfig) {
     this.config = {
-      timeout: 10000,
+      timeout: 100000,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -52,14 +52,14 @@ class ApiClient {
   }
 
   getTimeout(): number {
-    return this.config.timeout || 10000;
+    return this.config.timeout || 100000;
   }
 }
 
 // Default configuration — base URL includes /api (see services: flyers → …/api/flyers)
 const defaultConfig: ApiConfig = {
   baseUrl: import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
-  timeout: 10000,
+  timeout: 100000,
   headers: {
     'Content-Type': 'application/json',
   },

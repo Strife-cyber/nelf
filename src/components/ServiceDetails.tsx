@@ -26,7 +26,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId }) => {
               </li>
               <li className="flex items-start space-x-2">
                 <span className="text-cyan-400 mt-1">▸</span>
-                <span>Native iOS and Android development</span>
+                <span>Cross platform mobile development</span>
               </li>
               <li className="flex items-start space-x-2">
                 <span className="text-cyan-400 mt-1">▸</span>
@@ -41,12 +41,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId }) => {
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-white">Technologies</h3>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm">React</span>
-              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm">Node.js</span>
-              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm">TypeScript</span>
-              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm">Next.js</span>
-              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm">Swift</span>
-              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm">Kotlin</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">React</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Vue.js</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Angualar</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Node.js</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Nest.js</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Laravel</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Django</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Next.js</span>
+              <span className="px-3 py-1 bg-cyan-400/20 border border-cyan-400/30 rounded-full text-sm text-white">Flutter</span>
             </div>
           </div>
         </div>
@@ -87,10 +90,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId }) => {
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-white">Design Tools</h3>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm">Figma</span>
-              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm">Adobe Creative Suite</span>
-              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm">Sketch</span>
-              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm">Illustrator</span>
+              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm text-white">Figma</span>
+              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm text-white">Canva</span>
+              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm text-white">Adobe Creative Suite</span>
+              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm text-white">Sketch</span>
+              <span className="px-3 py-1 bg-pink-400/20 border border-pink-400/30 rounded-full text-sm text-white">Illustrator</span>
             </div>
           </div>
         </div>
@@ -131,10 +135,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId }) => {
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-white">Production Tools</h3>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm">After Effects</span>
-              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm">Premiere Pro</span>
-              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm">Cinema 4D</span>
-              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm">Blender</span>
+              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm text-white">After Effects</span>
+              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm text-white">Premiere Pro</span>
+              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm text-white">Cinema 4D</span>
+              <span className="px-3 py-1 bg-orange-400/20 border border-orange-400/30 rounded-full text-sm text-white">Blender</span>
             </div>
           </div>
         </div>

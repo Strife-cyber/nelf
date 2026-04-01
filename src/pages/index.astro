@@ -1,13 +1,32 @@
 ---
+export const prerender = false;
+
 import '../styles/global.css';
 import Layout from '@/layouts/Layout.astro';
 import nelfLogo from '@/assets/nelf-logo.jpeg';
 import LaserFlow from '@/components/LaserFlow';
+import Gallery from '@/components/Gallery.astro';
 import SplashCursor from '@/components/SplashCursor';
-import ServiceSidebar from '@/components/ServiceSidebar';
 import RotatingText from '@/components/RotatingText';
-import GridMotion from '@/components/GridMotion';
+import ServiceSidebar from '@/components/ServiceSidebar';
+import { 
+	flyerService, 
+	videoService, 
+	websitePreviewService 
+} from '@/lib/api';
 
+const results = await Promise.allSettled([
+  flyerService.listAll(),
+  videoService.listAll(),
+  websitePreviewService.listAll()
+]);
+
+const [flyerResult, videoResult, previewResult] = results;
+const flyers = flyerResult.status === 'fulfilled' ? flyerResult.value : [];
+const videos = videoResult.status === 'fulfilled' ? videoResult.value : [];
+const previews = previewResult.status === 'fulfilled' ? previewResult.value : [];
+const flyerModalData = JSON.stringify(flyers);
+console.log(flyers, videos, previews);
 ---
 
 <Layout>
@@ -35,7 +54,7 @@ import GridMotion from '@/components/GridMotion';
 				<a href="#craft" class="hover:text-nelf-pink">Our craft</a>
 				<a href="#vision" class="hover:text-nelf-pink">Looking forward</a>
 				<a href="#gallery" class="hover:text-nelf-pink">The gallery</a>
-				<a href="#team" class="hover:text-nelf-pink">Meet the creators</a>
+				<!--<a href="#team" class="hover:text-nelf-pink">Meet the creators</a>-->
 			</nav>
 
 			<nav class="text-white">
@@ -108,7 +127,7 @@ import GridMotion from '@/components/GridMotion';
 							{[
 								{"id": "dev", "title": "Web & Mobile Development", "text": "Robust architectures and seamless interfaces. We engineer high-performance digital ecosystems from landing pages and e-commerce to complex web apps—built to scale", "icon": "code", "gradient": "from-cyan-400 to-blue-600", "position": "md:translate-y-4"},
 								{"id": "design", "title": "Design & Branding", "text": "Visual identities that leave a lasting impression. From the foundational logo to comprehensive brand guidelines, we forge the visual soul of your business.", "icon": "palette", "gradient": "from-pink-400 to-purple-600", "position": "md:translate-y-0"}, 
-								{"id": "motion", "title": "Motion & Contenu", "text": "Bring your message to life. We craft dynamic animations, promotional videos, and strategic content designed to capture instant attention and drive engagement.", "icon": "video", "gradient": "from-orange-400 to-red-600", "position": "md:translate-y-4"}
+								{"id": "motion", "title": "Motion & Content", "text": "Bring your message to life. We craft dynamic animations, promotional videos, and strategic content designed to capture instant attention and drive engagement.", "icon": "video", "gradient": "from-orange-400 to-red-600", "position": "md:translate-y-4"}
 							].map((service, index) => (
 								<div class={`group relative ${index % 2 === 0 ? 'translate-y-24' : '-translate-y-4'}`} data-service={service.id}>
 									<div class="absolute -inset-1 bg-linear-to-r {service.gradient} rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
@@ -167,13 +186,160 @@ import GridMotion from '@/components/GridMotion';
 					<p class="text-white text-xl text-center">At NELF, we believe the best technology fades into the background, letting the experience take center stage. <br/>  Our mission is to simplify digital interactions and create genuinely authentic value.</p>
 				</div>
 			</section>
-			<section id="gallery" class="relative flex justify-center items-center" style="height: calc(100vh - 4rem);">
-				<div class="z-10 relative flex flex-col justify-center items-center">
-					<h1 class="font-bold text-white text-6xl">Our creations</h1>
+			<section
+				id="gallery"
+				class="flex flex-col items-center gap-12 py-24 px-6"
+				style="min-height: calc(100vh - 4rem);"
+			>
+				<!-- Heading -->
+				<div class="text-center">
+					<h2 class="font-bold text-white text-6xl drop-shadow-2xl tracking-tight">
+					Our creations
+					</h2>
+					<p class="mt-3 text-white/40 md:text-lg tracking-widest uppercase text-sm">
+					A glimpse into our work
+					</p>
 				</div>
+
+				<!-- Grid -->
+				<div
+					id="flyers"
+					class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full"
+				>
+					{
+						flyers.map((flyer, index) => (
+							<button
+								type="button"
+								class="group relative aspect-3/4 rounded-2xl overflow-hidden bg-gray-800 shadow-lg shadow-black/40 transition-all duration-500 hover:-translate-y-2 hover:shadow-nelf-pink/20 hover:shadow-2xl hover:ring-1 hover:ring-nelf-pink flyer-card"
+								data-flyer-index={index}
+								aria-label={`Open flyer ${flyer.name}`}
+							>
+								<!-- Image -->
+								<img
+									src={flyer.url}
+									alt={flyer.name}
+									class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 grayscale group-hover:scale-105 group-hover:grayscale-0"
+								/>
+
+								<div class="absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-100"></div>
+								<div class="right-0 bottom-0 left-0 absolute p-4 text-left">
+									<p class="text-white/70 text-[0.65rem] uppercase tracking-[0.3em]">
+										Flyer
+									</p>
+									<p class="mt-2 font-medium text-white text-sm md:text-base truncate">
+										{flyer.name}
+									</p>
+								</div>
+							</button>
+						))
+					}
+				</div>
+
+				<!-- Grid -->
+				<div
+					id="website-previews"
+					class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full"
+				>
+					{
+						previews.map((preview, index) => (
+							<button>
+								<iframe src={preview.url} frameborder="0"></iframe>
+							</button>
+						))
+					}
+				</div>
+
 			</section>
-			<section id="team" class="flex justify-center items-center" style="height: calc(100vh - 4rem);"></section>
+			<!--<section id="team" class="flex justify-center items-center" style="height: calc(100vh - 4rem);"></section>-->
 		</main>
+		<div
+			id="flyer-modal"
+			data-flyers={flyerModalData}
+			class="hidden fixed inset-0 z-50 items-center justify-center p-4 sm:p-6"
+			role="presentation"
+			aria-hidden="true"
+		>
+			<button
+				id="flyer-modal-backdrop"
+				type="button"
+				class="absolute inset-0 bg-black/85 backdrop-blur-md"
+				aria-label="Close flyer modal"
+			></button>
+
+			<div
+				class="relative z-10 grid max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/10 bg-black/85 shadow-2xl shadow-black/70 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="flyer-modal-title"
+			>
+				<div class="relative flex min-h-80 items-center justify-center overflow-hidden bg-neutral-950 p-4 sm:p-6 lg:p-8">
+					<img
+						id="flyer-modal-image"
+						src=""
+						alt=""
+						class="max-h-[72vh] w-full rounded-[1.5rem] object-contain"
+					/>
+
+					<button
+						id="flyer-modal-prev"
+						type="button"
+						class="top-1/2 left-4 absolute flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white transition hover:border-nelf-pink/60 hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-30"
+						aria-label="Previous flyer"
+					>
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19l-7-7 7-7"></path>
+						</svg>
+					</button>
+
+					<button
+						id="flyer-modal-next"
+						type="button"
+						class="top-1/2 right-4 absolute flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white transition hover:border-nelf-pink/60 hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-30"
+						aria-label="Next flyer"
+					>
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"></path>
+						</svg>
+					</button>
+				</div>
+
+				<div class="flex flex-col overflow-y-auto border-white/10 border-t lg:border-t-0 lg:border-l">
+					<div class="flex items-start justify-between gap-4 border-white/10 border-b px-6 py-5 sm:px-8">
+						<div>
+							<p id="flyer-modal-count" class="text-white/45 text-xs uppercase tracking-[0.35em]"></p>
+							<h3 id="flyer-modal-title" class="mt-3 font-semibold text-white text-2xl sm:text-3xl"></h3>
+						</div>
+						<button
+							id="flyer-modal-close"
+							type="button"
+							class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/30 hover:bg-white/10"
+							aria-label="Close flyer modal"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					</div>
+
+					<div class="flex-1 space-y-6 px-6 py-6 sm:px-8 sm:py-8">
+						<div id="flyer-modal-event-group" class="rounded-2xl border border-white/10 bg-white/5 p-4" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Event</p>
+							<p id="flyer-modal-event" class="mt-2 text-white text-lg"></p>
+						</div>
+
+						<div id="flyer-modal-short-info-group" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Short info</p>
+							<p id="flyer-modal-short-info" class="mt-3 text-white/80 leading-relaxed"></p>
+						</div>
+
+						<div id="flyer-modal-description-group" hidden>
+							<p class="text-white/45 text-[0.65rem] uppercase tracking-[0.3em]">Description</p>
+							<p id="flyer-modal-description" class="mt-3 text-white/75 leading-relaxed"></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<footer class="z-10 relative bg-black/80 backdrop-blur-xl border-white/10 border-t">
 			<div class="mx-auto px-8 py-16 max-w-7xl">
 				<div class="gap-8 grid grid-cols-1 md:grid-cols-4">
@@ -217,7 +383,7 @@ import GridMotion from '@/components/GridMotion';
 							<li><a href="#craft" class="text-gray-400 hover:text-nelf-pink transition-colors duration-300">Our Craft</a></li>
 							<li><a href="#vision" class="text-gray-400 hover:text-nelf-pink transition-colors duration-300">Vision</a></li>
 							<li><a href="#gallery" class="text-gray-400 hover:text-nelf-pink transition-colors duration-300">Gallery</a></li>
-							<li><a href="#team" class="text-gray-400 hover:text-nelf-pink transition-colors duration-300">Team</a></li>
+							<!--<li><a href="#team" class="text-gray-400 hover:text-nelf-pink transition-colors duration-300">Team</a></li>-->
 						</ul>
 					</div>
 
@@ -268,5 +434,139 @@ import GridMotion from '@/components/GridMotion';
 			}
 		});
 	});
-</script>
 
+	type FlyerModalItem = {
+		name?: string;
+		description?: string;
+		event_title?: string;
+		short_info?: string;
+		url: string;
+	};
+
+	const flyerModal = document.getElementById('flyer-modal');
+	const flyerModalClose = document.getElementById('flyer-modal-close');
+	const flyerModalBackdrop = document.getElementById('flyer-modal-backdrop');
+	const flyerModalPrev = document.getElementById('flyer-modal-prev') as HTMLButtonElement | null;
+	const flyerModalNext = document.getElementById('flyer-modal-next') as HTMLButtonElement | null;
+	const flyerModalImage = document.getElementById('flyer-modal-image') as HTMLImageElement | null;
+	const flyerModalCount = document.getElementById('flyer-modal-count');
+	const flyerModalTitle = document.getElementById('flyer-modal-title');
+	const flyerModalEventGroup = document.getElementById('flyer-modal-event-group');
+	const flyerModalEvent = document.getElementById('flyer-modal-event');
+	const flyerModalShortInfoGroup = document.getElementById('flyer-modal-short-info-group');
+	const flyerModalShortInfo = document.getElementById('flyer-modal-short-info');
+	const flyerModalDescriptionGroup = document.getElementById('flyer-modal-description-group');
+	const flyerModalDescription = document.getElementById('flyer-modal-description');
+	const flyerCards = document.querySelectorAll('[data-flyer-index]');
+	const flyerItems = flyerModal ? JSON.parse(flyerModal.dataset.flyers || '[]') as FlyerModalItem[] : [];
+
+	let activeFlyerIndex = 0;
+	let flyerModalOpen = false;
+	let previousBodyOverflow = '';
+	let lastFlyerTrigger: HTMLElement | null = null;
+
+	const setOptionalContent = (
+		group: HTMLElement | null,
+		element: HTMLElement | null,
+		value?: string
+	) => {
+		if (!group || !element) return;
+
+		const content = value?.trim();
+		if (!content) {
+			group.hidden = true;
+			element.textContent = '';
+			return;
+		}
+
+		group.hidden = false;
+		element.textContent = content;
+	};
+
+	const updateFlyerModal = (index: number) => {
+		if (!flyerModalImage || !flyerModalTitle || flyerItems.length === 0) return;
+
+		const flyer = flyerItems[index];
+		if (!flyer) return;
+
+		activeFlyerIndex = index;
+		flyerModalImage.src = flyer.url;
+		flyerModalImage.alt = flyer.name ? `${flyer.name} flyer` : 'Flyer';
+		flyerModalTitle.textContent = flyer.name?.trim() || 'Untitled flyer';
+
+		if (flyerModalCount) {
+			flyerModalCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(flyerItems.length).padStart(2, '0')}`;
+		}
+
+		setOptionalContent(flyerModalEventGroup, flyerModalEvent, flyer.event_title);
+		setOptionalContent(flyerModalShortInfoGroup, flyerModalShortInfo, flyer.short_info);
+		setOptionalContent(flyerModalDescriptionGroup, flyerModalDescription, flyer.description);
+
+		flyerModalPrev?.toggleAttribute('disabled', index === 0);
+		flyerModalNext?.toggleAttribute('disabled', index === flyerItems.length - 1);
+	};
+
+	const openFlyerModal = (index: number, trigger?: HTMLElement | null) => {
+		if (!flyerModal || flyerItems.length === 0) return;
+
+		updateFlyerModal(index);
+		previousBodyOverflow = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		flyerModal.classList.remove('hidden');
+		flyerModal.classList.add('flex');
+		flyerModal.setAttribute('aria-hidden', 'false');
+		flyerModalOpen = true;
+		lastFlyerTrigger = trigger || null;
+		flyerModalClose?.focus();
+	};
+
+	const closeFlyerModal = () => {
+		if (!flyerModal || !flyerModalOpen) return;
+
+		flyerModal.classList.add('hidden');
+		flyerModal.classList.remove('flex');
+		flyerModal.setAttribute('aria-hidden', 'true');
+		document.body.style.overflow = previousBodyOverflow;
+		flyerModalOpen = false;
+		lastFlyerTrigger?.focus();
+	};
+
+	const moveFlyerModal = (direction: number) => {
+		const nextIndex = activeFlyerIndex + direction;
+		if (nextIndex < 0 || nextIndex >= flyerItems.length) return;
+		updateFlyerModal(nextIndex);
+	};
+
+	flyerCards.forEach(card => {
+		card.addEventListener('click', () => {
+			const target = card as HTMLElement;
+			const index = Number(target.dataset.flyerIndex);
+			if (Number.isNaN(index)) return;
+			openFlyerModal(index, target);
+		});
+	});
+
+	flyerModalClose?.addEventListener('click', closeFlyerModal);
+	flyerModalBackdrop?.addEventListener('click', closeFlyerModal);
+	flyerModalPrev?.addEventListener('click', () => moveFlyerModal(-1));
+	flyerModalNext?.addEventListener('click', () => moveFlyerModal(1));
+
+	document.addEventListener('keydown', (event) => {
+		if (!flyerModalOpen) return;
+
+		if (event.key === 'Escape') {
+			closeFlyerModal();
+			return;
+		}
+
+		if (event.key === 'ArrowLeft') {
+			event.preventDefault();
+			moveFlyerModal(-1);
+		}
+
+		if (event.key === 'ArrowRight') {
+			event.preventDefault();
+			moveFlyerModal(1);
+		}
+	});
+</script>

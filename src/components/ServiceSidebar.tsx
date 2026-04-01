@@ -78,6 +78,7 @@ const ServiceSidebar: React.FC = () => {
               </h2>
             )}
             <button 
+              title='sidebar-button'
               onClick={handleClose}
               className="text-white/60 hover:text-white transition-colors"
             >
