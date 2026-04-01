@@ -1,0 +1,28 @@
+services:
+  nelf:
+    container_name: nelf
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4321
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: traefik-net
+      traefik.http.routers.nelf.rule: Host(`${TRAEFIK_HOST:-nelf.strife-cyber.org}`)
+      traefik.http.routers.nelf.entrypoints: ${TRAEFIK_ENTRYPOINTS:-https}
+      traefik.http.routers.nelf.tls: "true"
+      traefik.http.routers.nelf.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.services.nelf.loadbalancer.server.port: "4321"
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true

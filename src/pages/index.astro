@@ -36,7 +36,6 @@ const websitePreviewCards = previews.map((preview) => {
 const flyerModalData = JSON.stringify(flyers);
 const videoModalData = JSON.stringify(videos);
 const websiteModalData = JSON.stringify(websitePreviewCards);
-console.log(flyers, videos, previews);
 ---
 
 <Layout>
@@ -448,9 +447,34 @@ console.log(flyers, videos, previews);
 									<label for="project-brief" class="block text-white/70 text-sm">Project brief</label>
 									<textarea id="project-brief" name="brief" rows="6" class="mt-2 w-full rounded-[1.5rem] border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-nelf-pink/70" placeholder="Tell us what you're building, what success looks like, and any references or constraints."></textarea>
 								</div>
+								<div class="grid gap-3 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 sm:grid-cols-2">
+									<div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+										<p class="text-[0.65rem] text-white/45 uppercase tracking-[0.3em]">WhatsApp path</p>
+										<p class="mt-2 text-sm text-white/70 leading-relaxed">Best for quick back-and-forth once your project brief is ready.</p>
+										<!-- Add here: WhatsApp project line link -->
+										<a href="#" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-nelf-pink">
+											<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+												<path d="M20.52 3.48A11.85 11.85 0 0 0 12.08 0C5.5 0 .15 5.35.15 11.93c0 2.1.55 4.15 1.59 5.97L0 24l6.3-1.65a11.92 11.92 0 0 0 5.78 1.47h.01c6.58 0 11.93-5.35 11.93-11.93 0-3.19-1.24-6.18-3.5-8.4Zm-8.44 18.32h-.01a9.92 9.92 0 0 1-5.05-1.38l-.36-.21-3.74.98 1-3.64-.23-.37a9.92 9.92 0 0 1-1.52-5.25c0-5.49 4.47-9.96 9.97-9.96 2.66 0 5.16 1.04 7.03 2.92a9.87 9.87 0 0 1 2.92 7.04c0 5.49-4.47 9.96-9.97 9.96Zm5.46-7.46c-.3-.15-1.76-.87-2.03-.97-.27-.1-.46-.15-.66.15-.2.3-.76.97-.94 1.17-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.38-1.46-.88-.79-1.47-1.76-1.64-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.52-.08-.15-.66-1.59-.9-2.18-.24-.57-.48-.49-.66-.5h-.56c-.2 0-.52.08-.79.38-.27.3-1.04 1.02-1.04 2.49s1.06 2.9 1.21 3.1c.15.2 2.08 3.18 5.04 4.45.71.31 1.27.5 1.7.64.71.23 1.35.2 1.86.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.28.17-1.41-.07-.12-.27-.2-.57-.35Z"></path>
+											</svg>
+											Share your brief on WhatsApp
+										</a>
+									</div>
+									<div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+										<p class="text-[0.65rem] text-white/45 uppercase tracking-[0.3em]">Email path</p>
+										<p class="mt-2 text-sm text-white/70 leading-relaxed">Best for attachments, decks, references, and anything you want us to review carefully.</p>
+										<!-- Add here: Project intake email address -->
+										<a href="mailto:" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-nelf-pink">
+											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7.5 12 13l9-5.5"></path>
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 5.5h14A2.5 2.5 0 0 1 21.5 8v8A2.5 2.5 0 0 1 19 18.5H5A2.5 2.5 0 0 1 2.5 16V8A2.5 2.5 0 0 1 5 5.5Z"></path>
+											</svg>
+											Email the project brief
+										</a>
+									</div>
+								</div>
 								<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 									<p id="project-brief-status" class="text-white/45 text-sm">Create a polished brief, then paste it into your preferred contact channel.</p>
-									<button type="button" id="copy-project-brief" class="rounded-full border border-white/70 bg-white px-5 py-3 font-medium text-gray-900 transition-transform hover:-translate-y-0.5">
+									<button type="button" id="copy-project-brief" class="rounded-md text-xs border border-white/70 bg-white px-5 py-3 font-medium text-gray-900 transition-transform hover:-translate-y-0.5">
 										Copy project brief
 									</button>
 								</div>
@@ -491,9 +515,34 @@ console.log(flyers, videos, previews);
 									<label for="contact-message" class="block text-white/70 text-sm">Message</label>
 									<textarea id="contact-message" name="message" rows="7" class="mt-2 w-full rounded-[1.5rem] border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70" placeholder="What would you like to ask or share?"></textarea>
 								</div>
+								<div class="grid gap-3 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 sm:grid-cols-2">
+									<div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+										<p class="text-[0.65rem] text-white/45 uppercase tracking-[0.3em]">Email path</p>
+										<p class="mt-2 text-sm text-white/70 leading-relaxed">Best for general questions, partnership notes, support requests, and anything that is not urgent.</p>
+										<!-- Add here: General contact email address -->
+										<a href="mailto:" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-cyan-300">
+											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7.5 12 13l9-5.5"></path>
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 5.5h14A2.5 2.5 0 0 1 21.5 8v8A2.5 2.5 0 0 1 19 18.5H5A2.5 2.5 0 0 1 2.5 16V8A2.5 2.5 0 0 1 5 5.5Z"></path>
+											</svg>
+											Email us directly
+										</a>
+									</div>
+									<div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+										<p class="text-[0.65rem] text-white/45 uppercase tracking-[0.3em]">WhatsApp path</p>
+										<p class="mt-2 text-sm text-white/70 leading-relaxed">Good for a quick hello or a follow-up after you have already sent the main context.</p>
+										<!-- Add here: General WhatsApp contact link -->
+										<a href="#" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-cyan-300">
+											<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+												<path d="M20.52 3.48A11.85 11.85 0 0 0 12.08 0C5.5 0 .15 5.35.15 11.93c0 2.1.55 4.15 1.59 5.97L0 24l6.3-1.65a11.92 11.92 0 0 0 5.78 1.47h.01c6.58 0 11.93-5.35 11.93-11.93 0-3.19-1.24-6.18-3.5-8.4Zm-8.44 18.32h-.01a9.92 9.92 0 0 1-5.05-1.38l-.36-.21-3.74.98 1-3.64-.23-.37a9.92 9.92 0 0 1-1.52-5.25c0-5.49 4.47-9.96 9.97-9.96 2.66 0 5.16 1.04 7.03 2.92a9.87 9.87 0 0 1 2.92 7.04c0 5.49-4.47 9.96-9.97 9.96Zm5.46-7.46c-.3-.15-1.76-.87-2.03-.97-.27-.1-.46-.15-.66.15-.2.3-.76.97-.94 1.17-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.38-1.46-.88-.79-1.47-1.76-1.64-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.52-.08-.15-.66-1.59-.9-2.18-.24-.57-.48-.49-.66-.5h-.56c-.2 0-.52.08-.79.38-.27.3-1.04 1.02-1.04 2.49s1.06 2.9 1.21 3.1c.15.2 2.08 3.18 5.04 4.45.71.31 1.27.5 1.7.64.71.23 1.35.2 1.86.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.28.17-1.41-.07-.12-.27-.2-.57-.35Z"></path>
+											</svg>
+											Message us on WhatsApp
+										</a>
+									</div>
+								</div>
 								<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 									<p id="general-contact-status" class="text-white/45 text-sm">Build a simple outreach note you can drop into email, DM, or WhatsApp.</p>
-									<button type="button" id="copy-general-contact" class="rounded-full border border-white/20 bg-white/5 px-5 py-3 font-medium text-white transition hover:border-white/35 hover:bg-white/10">
+									<button type="button" id="copy-general-contact" class="text-xs rounded-md border border-white/20 bg-white/5 px-5 py-3 font-medium text-white transition hover:border-white/35 hover:bg-white/10">
 										Copy contact note
 									</button>
 								</div>
@@ -817,7 +866,45 @@ console.log(flyers, videos, previews);
 						<p class="mb-6 max-w-md text-gray-400 leading-relaxed">
 							Your third hand in digital innovation. We craft exceptional experiences that bridge the gap between vision and reality.
 						</p>
+						<div class="mb-6 grid gap-3 sm:grid-cols-2">
+							<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+								<p class="text-[0.65rem] text-white/45 uppercase tracking-[0.3em]">WhatsApp</p>
+								<p class="mt-2 text-sm text-gray-400 leading-relaxed">Fastest path for project conversations, follow-ups, and quick contact.</p>
+								<!-- Add here: Footer WhatsApp link -->
+								<a href="#" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-nelf-pink">
+									<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+										<path d="M20.52 3.48A11.85 11.85 0 0 0 12.08 0C5.5 0 .15 5.35.15 11.93c0 2.1.55 4.15 1.59 5.97L0 24l6.3-1.65a11.92 11.92 0 0 0 5.78 1.47h.01c6.58 0 11.93-5.35 11.93-11.93 0-3.19-1.24-6.18-3.5-8.4Zm-8.44 18.32h-.01a9.92 9.92 0 0 1-5.05-1.38l-.36-.21-3.74.98 1-3.64-.23-.37a9.92 9.92 0 0 1-1.52-5.25c0-5.49 4.47-9.96 9.97-9.96 2.66 0 5.16 1.04 7.03 2.92a9.87 9.87 0 0 1 2.92 7.04c0 5.49-4.47 9.96-9.97 9.96Zm5.46-7.46c-.3-.15-1.76-.87-2.03-.97-.27-.1-.46-.15-.66.15-.2.3-.76.97-.94 1.17-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.38-1.46-.88-.79-1.47-1.76-1.64-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.52-.08-.15-.66-1.59-.9-2.18-.24-.57-.48-.49-.66-.5h-.56c-.2 0-.52.08-.79.38-.27.3-1.04 1.02-1.04 2.49s1.06 2.9 1.21 3.1c.15.2 2.08 3.18 5.04 4.45.71.31 1.27.5 1.7.64.71.23 1.35.2 1.86.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.28.17-1.41-.07-.12-.27-.2-.57-.35Z"></path>
+									</svg>
+									Open WhatsApp
+								</a>
+							</div>
+							<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+								<p class="text-[0.65rem] text-white/45 uppercase tracking-[0.3em]">Email</p>
+								<p class="mt-2 text-sm text-gray-400 leading-relaxed">Best for detailed requests, decks, references, and formal follow-up.</p>
+								<!-- Add here: Footer contact email address -->
+								<a href="mailto:" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-nelf-pink">
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7.5 12 13l9-5.5"></path>
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 5.5h14A2.5 2.5 0 0 1 21.5 8v8A2.5 2.5 0 0 1 19 18.5H5A2.5 2.5 0 0 1 2.5 16V8A2.5 2.5 0 0 1 5 5.5Z"></path>
+									</svg>
+									Send an email
+								</a>
+							</div>
+						</div>
 						<div class="flex space-x-4">
+							<!-- Add here: Footer WhatsApp icon link -->
+							<a href="#" class="flex justify-center items-center bg-white/10 hover:bg-nelf-pink/20 border border-white/20 hover:border-nelf-pink/40 rounded-full w-10 h-10 hover:scale-110 transition-all duration-300" aria-label="WhatsApp">
+								<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M20.52 3.48A11.85 11.85 0 0 0 12.08 0C5.5 0 .15 5.35.15 11.93c0 2.1.55 4.15 1.59 5.97L0 24l6.3-1.65a11.92 11.92 0 0 0 5.78 1.47h.01c6.58 0 11.93-5.35 11.93-11.93 0-3.19-1.24-6.18-3.5-8.4Zm-8.44 18.32h-.01a9.92 9.92 0 0 1-5.05-1.38l-.36-.21-3.74.98 1-3.64-.23-.37a9.92 9.92 0 0 1-1.52-5.25c0-5.49 4.47-9.96 9.97-9.96 2.66 0 5.16 1.04 7.03 2.92a9.87 9.87 0 0 1 2.92 7.04c0 5.49-4.47 9.96-9.97 9.96Zm5.46-7.46c-.3-.15-1.76-.87-2.03-.97-.27-.1-.46-.15-.66.15-.2.3-.76.97-.94 1.17-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.38-1.46-.88-.79-1.47-1.76-1.64-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.52-.08-.15-.66-1.59-.9-2.18-.24-.57-.48-.49-.66-.5h-.56c-.2 0-.52.08-.79.38-.27.3-1.04 1.02-1.04 2.49s1.06 2.9 1.21 3.1c.15.2 2.08 3.18 5.04 4.45.71.31 1.27.5 1.7.64.71.23 1.35.2 1.86.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.28.17-1.41-.07-.12-.27-.2-.57-.35Z"></path>
+								</svg>
+							</a>
+							<!-- Add here: Footer email icon link -->
+							<a href="mailto:" class="flex justify-center items-center bg-white/10 hover:bg-nelf-pink/20 border border-white/20 hover:border-nelf-pink/40 rounded-full w-10 h-10 hover:scale-110 transition-all duration-300" aria-label="Email">
+								<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7.5 12 13l9-5.5"></path>
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 5.5h14A2.5 2.5 0 0 1 21.5 8v8A2.5 2.5 0 0 1 19 18.5H5A2.5 2.5 0 0 1 2.5 16V8A2.5 2.5 0 0 1 5 5.5Z"></path>
+								</svg>
+							</a>
 							<a href="#" class="flex justify-center items-center bg-white/10 hover:bg-nelf-pink/20 border border-white/20 hover:border-nelf-pink/40 rounded-full w-10 h-10 hover:scale-110 transition-all duration-300">
 								<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
 									<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
