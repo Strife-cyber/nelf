@@ -1,0 +1,25 @@
+services:
+  nelf-api:
+    container_name: nelf-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    restart: unless-stopped
+    expose:
+      - "3000"
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "traefik-net"
+      traefik.http.routers.nelf-api.rule: "Host(`api.nelf.strife-cyber.org`)"
+      traefik.http.routers.nelf-api.entrypoints: "https"
+      traefik.http.routers.nelf-api.tls: "true"
+      traefik.http.routers.nelf-api.tls.certresolver: "letsencrypt"
+      traefik.http.services.nelf-api.loadbalancer.server.port: "3000"
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true

@@ -1,14 +1,15 @@
-use std::sync::Arc;
+use crate::state::AppState;
 use axum::Extension;
+use axum::http::HeaderValue;
+use std::{env, sync::Arc};
+use tower_http::cors::{Any, CorsLayer};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use tower_http::cors::{CorsLayer, Any};
-use crate::state::AppState;
 
-pub mod config;
-pub mod routes;
 pub mod app;
+pub mod config;
 pub mod middleware;
+pub mod routes;
 mod state;
 
 #[derive(OpenApi)]
@@ -60,35 +61,82 @@ mod state;
 )]
 struct ApiDoc;
 
+fn env_flag(name: &str, default: bool) -> bool {
+    env::var(name)
+        .map(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "on"
+            )
+        })
+        .unwrap_or(default)
+}
+
+fn parse_allowed_origins(value: &str) -> Vec<HeaderValue> {
+    let origins = value
+        .split(',')
+        .map(str::trim)
+        .filter(|origin| !origin.is_empty())
+        .map(|origin| {
+            origin
+                .parse::<HeaderValue>()
+                .unwrap_or_else(|_| panic!("Invalid CORS_ALLOWED_ORIGINS entry: {origin}"))
+        })
+        .collect::<Vec<_>>();
+
+    if origins.is_empty() {
+        panic!("CORS_ALLOWED_ORIGINS must contain at least one origin");
+    }
+
+    origins
+}
+
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    dotenvy::dotenv().ok();
+
     let db = config::database::connect().await;
     let client = config::filesystems::connect().await?;
 
     let state = Arc::new(AppState {
         db: Arc::new(db),
-        s3_client: Arc::new(client)
+        s3_client: Arc::new(client),
     });
 
-    // Swagger UI at /swagger-ui/
-    let swagger_router = SwaggerUi::new("/swagger-ui")
-        .url("/swagger-ui/openapi.json", ApiDoc::openapi());
+    let app_host = env::var("APP_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let app_port = env::var("APP_PORT").unwrap_or_else(|_| "3000".to_string());
+    let cors_allowed_origins =
+        env::var("CORS_ALLOWED_ORIGINS").unwrap_or_else(|_| "http://localhost:4321".to_string());
+    let enable_swagger = env_flag("ENABLE_SWAGGER", false);
 
     let cors = CorsLayer::new()
-        .allow_origin(["http://localhost:4321".parse().unwrap()])
+        .allow_origin(parse_allowed_origins(&cors_allowed_origins))
         .allow_methods(Any)
         .allow_headers(Any);
 
     let app = axum::Router::new()
         .nest("/api", routes::api::api_routes())
-        .merge(swagger_router)
         .layer(cors)
         .layer(axum::extract::DefaultBodyLimit::disable())
         .layer(Extension(state));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    let app = if enable_swagger {
+        let swagger_router =
+            SwaggerUi::new("/swagger-ui").url("/swagger-ui/openapi.json", ApiDoc::openapi());
+
+        app.merge(swagger_router)
+    } else {
+        app
+    };
+
+    let bind_address = format!("{app_host}:{app_port}");
+    let listener = tokio::net::TcpListener::bind(&bind_address).await?;
     println!("listening on {}", listener.local_addr()?);
-    println!("Swagger UI available at http://127.0.0.1:3000/swagger-ui/");
+    if enable_swagger {
+        println!("Swagger UI available at http://{bind_address}/swagger-ui/");
+    } else {
+        println!("Swagger UI disabled. Set ENABLE_SWAGGER=true to enable it.");
+    }
 
     axum::serve(listener, app).await?;
 

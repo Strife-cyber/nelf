@@ -1,20 +1,17 @@
-use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
-use serde::{Serialize, Deserialize};
-use chrono::{Utc, Duration};
-use argon2::{
-    password_hash::{
-        rand_core::OsRng,
-        PasswordHash, PasswordHasher, PasswordVerifier, SaltString
-    },
-    Argon2
-};
 use anyhow::Result;
+use argon2::{
+    Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
+};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: i32,      // User ID
-    pub role: String,  // User Role
-    pub exp: usize,    // Expiration time
+    pub sub: i32,     // User ID
+    pub role: String, // User Role
+    pub exp: usize,   // Expiration time
 }
 
 pub struct AuthService;
@@ -22,8 +19,8 @@ pub struct AuthService;
 impl AuthService {
     /// Generates a JWT for a user.
     pub fn generate_jwt(user_id: i32, role: String) -> Result<String> {
-        let secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "default_secret".to_string());
-        
+        let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+
         let expiration = Utc::now()
             .checked_add_signed(Duration::hours(24))
             .expect("valid timestamp")
@@ -46,8 +43,8 @@ impl AuthService {
 
     /// Validates a JWT and returns the claims.
     pub fn validate_jwt(token: &str) -> Result<Claims> {
-        let secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "default_secret".to_string());
-        
+        let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+
         let token_data = decode::<Claims>(
             token,
             &DecodingKey::from_secret(secret.as_ref()),
@@ -61,10 +58,11 @@ impl AuthService {
     pub fn hash_password(password: &str) -> Result<String> {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        let password_hash = argon2.hash_password(password.as_bytes(), &salt)
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
             .map_err(|e| anyhow::anyhow!("password hashing failed: {}", e))?
             .to_string();
-        
+
         Ok(password_hash)
     }
 
@@ -74,6 +72,8 @@ impl AuthService {
             Ok(h) => h,
             Err(_) => return false,
         };
-        Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok()
+        Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_ok()
     }
 }
