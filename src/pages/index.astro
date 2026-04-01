@@ -68,7 +68,7 @@ console.log(flyers, videos, previews);
 			</nav>
 
 			<nav class="text-white">
-				<button class="hover:bg-white px-6 py-2.5 border border-white/70 rounded-md font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
+				<button type="button" data-contact-open="talk" class="inline-flex hover:bg-white px-6 py-2.5 border border-white/70 rounded-md font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
 					Let's talk
 				</button>
 			</nav>
@@ -103,12 +103,12 @@ console.log(flyers, videos, previews);
 					<div class="mt-8"></div>
 					<p class="font-light text-[#555555] text-xl text-center">Create professional products that showcases your business brand, <br/> your vision, and helps you capture real growth</p>
 					<div class="space-x-4 mt-12">
-						<button class="bg-white px-6 py-2.5 border border-white/70 rounded-full font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
+						<button type="button" data-contact-open="talk" class="inline-flex bg-white px-6 py-2.5 border border-white/70 rounded-full font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
 							Start Creating
 						</button>
-						<button class="bg-[#333333] px-6 py-2.5 border border-white/70 rounded-full font-medium text-white transition-all hover:-translate-y-0.5 duration-300 transform">
+						<a href="#gallery" class="inline-flex bg-[#333333] px-6 py-2.5 border border-white/70 rounded-full font-medium text-white transition-all hover:-translate-y-0.5 duration-300 transform">
 							Browse Creations
-						</button>
+						</a>
 					</div>
 					<!--<div class="mt-12"></div>
 					<LogoLoop
@@ -351,10 +351,158 @@ console.log(flyers, videos, previews);
 						))
 					}
 				</div>
-
 			</section>
 			<!--<section id="team" class="flex justify-center items-center" style="height: calc(100vh - 4rem);"></section>-->
 		</main>
+		<div
+			id="contact-modal"
+			class="hidden fixed inset-0 z-50 items-center justify-center p-4 sm:p-6"
+			role="presentation"
+			aria-hidden="true"
+			data-contact-mode="talk"
+		>
+			<button
+				id="contact-modal-backdrop"
+				type="button"
+				class="absolute inset-0 bg-black/85 backdrop-blur-md"
+				aria-label="Close contact modal"
+			></button>
+
+			<div
+				class="relative z-10 w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/10 bg-black/92 shadow-2xl shadow-black/70"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="contact-modal-title"
+			>
+				<div class="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+					<div class="relative overflow-hidden border-white/10 border-b lg:border-b-0 lg:border-r">
+						<div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.14),transparent_26%)]" data-contact-accent="talk"></div>
+						<div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.15),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(244,114,182,0.12),transparent_26%)] hidden" data-contact-accent="contact"></div>
+						<div class="relative flex h-full flex-col justify-between p-6 sm:p-8">
+							<div>
+								<p id="contact-modal-eyebrow" class="text-white/45 text-xs uppercase tracking-[0.35em]"></p>
+								<h3 id="contact-modal-title" class="mt-4 font-bold text-white text-4xl tracking-tight sm:text-5xl"></h3>
+								<p id="contact-modal-copy" class="mt-5 max-w-xl text-white/65 text-lg leading-relaxed"></p>
+							</div>
+							<div id="contact-modal-highlights" class="mt-8 grid gap-3 text-sm text-white/65 sm:grid-cols-3"></div>
+						</div>
+					</div>
+
+					<div class="p-6 sm:p-8">
+						<div id="contact-panel-talk" class="space-y-4">
+							<div class="flex items-center justify-between gap-4">
+								<span class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white/60 text-xs uppercase tracking-[0.28em]">Best for new work</span>
+								<button
+									id="contact-modal-close"
+									type="button"
+									class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/30 hover:bg-white/10"
+									aria-label="Close contact modal"
+								>
+									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							</div>
+
+							<form id="project-brief-form" class="space-y-4">
+								<div class="grid gap-4 sm:grid-cols-2">
+									<div>
+										<label for="project-name" class="block text-white/70 text-sm">Your name</label>
+										<input id="project-name" name="name" type="text" class="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-nelf-pink/70" placeholder="Jane Doe" />
+									</div>
+									<div>
+										<label for="project-brand" class="block text-white/70 text-sm">Brand or business</label>
+										<input id="project-brand" name="brand" type="text" class="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-nelf-pink/70" placeholder="Brand name" />
+									</div>
+								</div>
+								<div class="grid gap-4 sm:grid-cols-3">
+									<div>
+										<label for="project-service" class="block text-white/70 text-sm">What do you need?</label>
+										<select id="project-service" name="service" class="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-nelf-pink/70">
+											<option value="Website or app">Website or app</option>
+											<option value="Brand identity">Brand identity</option>
+											<option value="Motion or content">Motion or content</option>
+											<option value="Full creative package">Full creative package</option>
+										</select>
+									</div>
+									<div>
+										<label for="project-timeline" class="block text-white/70 text-sm">Timeline</label>
+										<select id="project-timeline" name="timeline" class="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-nelf-pink/70">
+											<option value="ASAP">ASAP</option>
+											<option value="This month">This month</option>
+											<option value="Next 1-3 months">Next 1-3 months</option>
+											<option value="Exploring ideas">Exploring ideas</option>
+										</select>
+									</div>
+									<div>
+										<label for="project-budget" class="block text-white/70 text-sm">Budget range</label>
+										<select id="project-budget" name="budget" class="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-nelf-pink/70">
+											<option value="Need guidance">Need guidance</option>
+											<option value="Starter budget">Starter budget</option>
+											<option value="Mid-range budget">Mid-range budget</option>
+											<option value="Premium budget">Premium budget</option>
+										</select>
+									</div>
+								</div>
+								<div>
+									<label for="project-brief" class="block text-white/70 text-sm">Project brief</label>
+									<textarea id="project-brief" name="brief" rows="6" class="mt-2 w-full rounded-[1.5rem] border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-nelf-pink/70" placeholder="Tell us what you're building, what success looks like, and any references or constraints."></textarea>
+								</div>
+								<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+									<p id="project-brief-status" class="text-white/45 text-sm">Create a polished brief, then paste it into your preferred contact channel.</p>
+									<button type="button" id="copy-project-brief" class="rounded-full border border-white/70 bg-white px-5 py-3 font-medium text-gray-900 transition-transform hover:-translate-y-0.5">
+										Copy project brief
+									</button>
+								</div>
+							</form>
+						</div>
+
+						<div id="contact-panel-general" class="hidden space-y-4">
+							<div class="flex items-center justify-between gap-4">
+								<span class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white/60 text-xs uppercase tracking-[0.28em]">General inquiries</span>
+								<button
+									type="button"
+									class="contact-modal-close flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/30 hover:bg-white/10"
+									aria-label="Close contact modal"
+								>
+									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							</div>
+
+							<form id="general-contact-form" class="space-y-4">
+								<div class="grid gap-4 sm:grid-cols-2">
+									<div>
+										<label for="contact-name" class="block text-white/70 text-sm">Your name</label>
+										<input id="contact-name" name="name" type="text" class="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70" placeholder="Jane Doe" />
+									</div>
+									<div>
+										<label for="contact-topic" class="block text-white/70 text-sm">Topic</label>
+										<select id="contact-topic" name="topic" class="mt-2 w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70">
+											<option value="General question">General question</option>
+											<option value="Partnership">Partnership</option>
+											<option value="Support">Support</option>
+											<option value="Press or media">Press or media</option>
+										</select>
+									</div>
+								</div>
+								<div>
+									<label for="contact-message" class="block text-white/70 text-sm">Message</label>
+									<textarea id="contact-message" name="message" rows="7" class="mt-2 w-full rounded-[1.5rem] border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-cyan-300/70" placeholder="What would you like to ask or share?"></textarea>
+								</div>
+								<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+									<p id="general-contact-status" class="text-white/45 text-sm">Build a simple outreach note you can drop into email, DM, or WhatsApp.</p>
+									<button type="button" id="copy-general-contact" class="rounded-full border border-white/20 bg-white/5 px-5 py-3 font-medium text-white transition hover:border-white/35 hover:bg-white/10">
+										Copy contact note
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<div
 			id="video-modal"
 			data-videos={videoModalData}
@@ -724,7 +872,7 @@ console.log(flyers, videos, previews);
 					<div class="flex space-x-6">
 						<a href="/privacy" class="text-gray-400 hover:text-nelf-pink text-sm transition-colors duration-300">Privacy Policy</a>
 						<a href="/terms" class="text-gray-400 hover:text-nelf-pink text-sm transition-colors duration-300">Terms of Service</a>
-						<a href="#contact" class="text-gray-400 hover:text-nelf-pink text-sm transition-colors duration-300">Contact</a>
+						<button type="button" data-contact-open="contact" class="text-gray-400 hover:text-nelf-pink text-sm transition-colors duration-300">Contact</button>
 					</div>
 				</div>
 			</div>
@@ -780,6 +928,8 @@ console.log(flyers, videos, previews);
 		hostname: string;
 	};
 
+	type ContactModalMode = 'talk' | 'contact';
+
 	const flyerModal = document.getElementById('flyer-modal');
 	const flyerModalClose = document.getElementById('flyer-modal-close');
 	const flyerModalBackdrop = document.getElementById('flyer-modal-backdrop');
@@ -796,6 +946,15 @@ console.log(flyers, videos, previews);
 	const flyerModalDescription = document.getElementById('flyer-modal-description');
 	const flyerCards = document.querySelectorAll<HTMLElement>('[data-flyer-index]');
 	const flyerItems = flyerModal ? JSON.parse(flyerModal.dataset.flyers || '[]') as FlyerModalItem[] : [];
+	const contactModal = document.getElementById('contact-modal');
+	const contactModalBackdrop = document.getElementById('contact-modal-backdrop');
+	const contactModalTitle = document.getElementById('contact-modal-title');
+	const contactModalEyebrow = document.getElementById('contact-modal-eyebrow');
+	const contactModalCopy = document.getElementById('contact-modal-copy');
+	const contactModalHighlights = document.getElementById('contact-modal-highlights');
+	const contactPanelTalk = document.getElementById('contact-panel-talk');
+	const contactPanelGeneral = document.getElementById('contact-panel-general');
+	const contactTriggers = document.querySelectorAll<HTMLElement>('[data-contact-open]');
 	const videoModal = document.getElementById('video-modal');
 	const videoModalClose = document.getElementById('video-modal-close');
 	const videoModalBackdrop = document.getElementById('video-modal-backdrop');
@@ -833,11 +992,13 @@ console.log(flyers, videos, previews);
 	const websiteItems = websiteModal ? JSON.parse(websiteModal.dataset.websites || '[]') as WebsiteModalItem[] : [];
 
 	let activeFlyerIndex = 0;
+	let contactModalOpen = false;
 	let flyerModalOpen = false;
 	let activeVideoIndex = 0;
 	let videoModalOpen = false;
 	let websiteModalOpen = false;
 	let previousBodyOverflow = '';
+	let lastContactTrigger: HTMLElement | null = null;
 	let lastFlyerTrigger: HTMLElement | null = null;
 	let lastVideoTrigger: HTMLElement | null = null;
 	let lastWebsiteTrigger: HTMLElement | null = null;
@@ -867,6 +1028,81 @@ console.log(flyers, videos, previews);
 
 		group.hidden = false;
 		element.textContent = content;
+	};
+
+	const contactContent: Record<ContactModalMode, { eyebrow: string; title: string; copy: string; badge: string; highlights: string[] }> = {
+		talk: {
+			eyebrow: "Let's talk",
+			title: 'Start a project with a clear brief.',
+			copy: "Use this when you're ready to kick off something real. We’ll help you shape the request into a clean starting point you can send anywhere.",
+			badge: 'Best for new work',
+			highlights: [
+				'Websites, branding, campaigns, product launches, and end-to-end creative support.',
+				'Bring your goal, rough timeline, references, and anything that should not be missed.',
+				'Outcome: a polished project brief you can paste into email, WhatsApp, or your favorite channel.',
+			],
+		},
+		contact: {
+			eyebrow: 'Contact',
+			title: 'Ask a question, start a conversation, or follow up.',
+			copy: "Use this when you have a general question, a partnership idea, a support request, or you simply want to reach out without writing a full project brief.",
+			badge: 'General inquiries',
+			highlights: [
+				'Questions, partnerships, media requests, support, or if you are still figuring out the right service.',
+				'Keep it short, direct, and conversational. No full brief needed here.',
+				'Outcome: a simple contact note ready for email, DM, or WhatsApp.',
+			],
+		},
+	};
+
+	const setContactModalMode = (mode: ContactModalMode) => {
+		if (!contactModal || !contactModalTitle || !contactModalEyebrow || !contactModalCopy || !contactModalHighlights) return;
+
+		const content = contactContent[mode];
+		contactModal.dataset.contactMode = mode;
+		contactModalEyebrow.textContent = content.eyebrow;
+		contactModalTitle.textContent = content.title;
+		contactModalCopy.textContent = content.copy;
+
+		contactModalHighlights.innerHTML = content.highlights
+			.map((item) => `<div class="rounded-2xl border border-white/10 bg-black/30 p-4"><p class="leading-relaxed">${item}</p></div>`)
+			.join('');
+
+		contactPanelTalk?.classList.toggle('hidden', mode !== 'talk');
+		contactPanelGeneral?.classList.toggle('hidden', mode !== 'contact');
+
+		document.querySelectorAll<HTMLElement>('[data-contact-accent]').forEach((accent) => {
+			accent.classList.toggle('hidden', accent.dataset.contactAccent !== mode);
+		});
+
+		if (mode === 'talk') {
+			(document.getElementById('project-name') as HTMLInputElement | null)?.focus();
+		} else {
+			(document.getElementById('contact-name') as HTMLInputElement | null)?.focus();
+		}
+	};
+
+	const openContactModal = (mode: ContactModalMode, trigger?: HTMLElement | null) => {
+		if (!contactModal) return;
+
+		lockBodyScroll();
+		contactModal.classList.remove('hidden');
+		contactModal.classList.add('flex');
+		contactModal.setAttribute('aria-hidden', 'false');
+		contactModalOpen = true;
+		lastContactTrigger = trigger || null;
+		setContactModalMode(mode);
+	};
+
+	const closeContactModal = () => {
+		if (!contactModal || !contactModalOpen) return;
+
+		contactModal.classList.add('hidden');
+		contactModal.classList.remove('flex');
+		contactModal.setAttribute('aria-hidden', 'true');
+		unlockBodyScroll();
+		contactModalOpen = false;
+		lastContactTrigger?.focus();
 	};
 
 	const updateFlyerModal = (index: number) => {
@@ -1069,6 +1305,26 @@ console.log(flyers, videos, previews);
 		});
 	});
 
+	contactTriggers.forEach((trigger) => {
+		const openWithMode = () => {
+			const mode = (trigger.dataset.contactOpen === 'contact' ? 'contact' : 'talk') as ContactModalMode;
+			openContactModal(mode, trigger);
+		};
+
+		trigger.addEventListener('click', openWithMode);
+		trigger.addEventListener('keydown', (event: KeyboardEvent) => {
+			if (event.key !== 'Enter' && event.key !== ' ') return;
+			event.preventDefault();
+			openWithMode();
+		});
+	});
+
+	document.getElementById('contact-modal-close')?.addEventListener('click', closeContactModal);
+	document.querySelectorAll<HTMLElement>('.contact-modal-close').forEach((button) => {
+		button.addEventListener('click', closeContactModal);
+	});
+	contactModalBackdrop?.addEventListener('click', closeContactModal);
+
 	flyerModalClose?.addEventListener('click', closeFlyerModal);
 	flyerModalBackdrop?.addEventListener('click', closeFlyerModal);
 	flyerModalPrev?.addEventListener('click', () => moveFlyerModal(-1));
@@ -1106,10 +1362,97 @@ console.log(flyers, videos, previews);
 		});
 	});
 
+	const copyText = async (text: string) => {
+		if (navigator.clipboard?.writeText) {
+			await navigator.clipboard.writeText(text);
+			return;
+		}
+
+		const textarea = document.createElement('textarea');
+		textarea.value = text;
+		textarea.setAttribute('readonly', '');
+		textarea.style.position = 'absolute';
+		textarea.style.left = '-9999px';
+		document.body.appendChild(textarea);
+		textarea.select();
+		document.execCommand('copy');
+		document.body.removeChild(textarea);
+	};
+
+	const projectBriefButton = document.getElementById('copy-project-brief');
+	const projectBriefStatus = document.getElementById('project-brief-status');
+	const generalContactButton = document.getElementById('copy-general-contact');
+	const generalContactStatus = document.getElementById('general-contact-status');
+
+	projectBriefButton?.addEventListener('click', async () => {
+		const name = (document.getElementById('project-name') as HTMLInputElement | null)?.value.trim() || 'Name not provided';
+		const brand = (document.getElementById('project-brand') as HTMLInputElement | null)?.value.trim() || 'Brand not provided';
+		const service = (document.getElementById('project-service') as HTMLSelectElement | null)?.value || 'Not specified';
+		const timeline = (document.getElementById('project-timeline') as HTMLSelectElement | null)?.value || 'Not specified';
+		const budget = (document.getElementById('project-budget') as HTMLSelectElement | null)?.value || 'Not specified';
+		const brief = (document.getElementById('project-brief') as HTMLTextAreaElement | null)?.value.trim() || 'No brief added yet.';
+
+		const message = [
+			'PROJECT BRIEF',
+			`Name: ${name}`,
+			`Brand: ${brand}`,
+			`Need: ${service}`,
+			`Timeline: ${timeline}`,
+			`Budget: ${budget}`,
+			'',
+			'Brief:',
+			brief,
+		].join('\n');
+
+		try {
+			await copyText(message);
+			if (projectBriefStatus) {
+				projectBriefStatus.textContent = 'Project brief copied. Paste it into email, WhatsApp, or your favorite channel.';
+			}
+		} catch {
+			if (projectBriefStatus) {
+				projectBriefStatus.textContent = 'Copy failed. You can still select the text from the form and share it manually.';
+			}
+		}
+	});
+
+	generalContactButton?.addEventListener('click', async () => {
+		const name = (document.getElementById('contact-name') as HTMLInputElement | null)?.value.trim() || 'Name not provided';
+		const topic = (document.getElementById('contact-topic') as HTMLSelectElement | null)?.value || 'General question';
+		const messageBody = (document.getElementById('contact-message') as HTMLTextAreaElement | null)?.value.trim() || 'No message added yet.';
+
+		const message = [
+			'CONTACT NOTE',
+			`Name: ${name}`,
+			`Topic: ${topic}`,
+			'',
+			'Message:',
+			messageBody,
+		].join('\n');
+
+		try {
+			await copyText(message);
+			if (generalContactStatus) {
+				generalContactStatus.textContent = 'Contact note copied. Paste it into email, DM, or WhatsApp.';
+			}
+		} catch {
+			if (generalContactStatus) {
+				generalContactStatus.textContent = 'Copy failed. You can still copy the text from the form manually.';
+			}
+		}
+	});
+
 	websiteModalClose?.addEventListener('click', closeWebsiteModal);
 	websiteModalBackdrop?.addEventListener('click', closeWebsiteModal);
 
 	document.addEventListener('keydown', (event: KeyboardEvent) => {
+		if (contactModalOpen) {
+			if (event.key === 'Escape') {
+				closeContactModal();
+			}
+			return;
+		}
+
 		if (videoModalOpen) {
 			if (event.key === 'Escape') {
 				closeVideoModal();
