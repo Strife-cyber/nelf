@@ -66,12 +66,13 @@ const ServiceSidebar: React.FC = () => {
       
       {/* Service Details Sidebar */}
       <div 
-        className="right-0 z-50 fixed inset-y-0 bg-black/95 backdrop-blur-xl border-white/10 border-l w-1/2 overflow-hidden transition-transform translate-x-0 duration-300 transform"
+        className="right-0 z-50 fixed top-0 bottom-0 bg-black/95 backdrop-blur-xl border-white/10 border-l w-full md:w-1/2 overflow-hidden transition-transform translate-x-0 duration-300 transform"
+        style={{ height: '100dvh' }}
       >
         <div className="flex flex-col h-full">
-          <div className="flex justify-between items-center p-6 border-white/10 border-b">
+          <div className="flex justify-between items-center p-4 sm:p-6 border-white/10 border-b">
             {serviceId && (
-              <h2 className="font-bold text-white text-2xl">
+              <h2 className="font-bold text-white text-xl sm:text-2xl">
                 {serviceId === 'dev' && 'Web & Mobile Development'}
                 {serviceId === 'design' && 'Design & Branding'}
                 {serviceId === 'motion' && 'Motion & Content'}
@@ -80,14 +81,14 @@ const ServiceSidebar: React.FC = () => {
             <button 
               title='sidebar-button'
               onClick={handleClose}
-              className="text-white/60 hover:text-white transition-colors"
+              className="ml-4 shrink-0 text-white/60 hover:text-white transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
             {serviceId && <ServiceDetails serviceId={serviceId} />}
           </div>
         </div>
