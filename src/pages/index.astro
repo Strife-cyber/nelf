@@ -39,7 +39,7 @@ const websiteModalData = JSON.stringify(websitePreviewCards);
 ---
 
 <Layout>
-	<div class="relative lg:justify-center bg-black lg:p-8 w-screen overflow-hidden">
+	<div class="relative lg:justify-center bg-black lg:p-8 w-screen overflow-x-hidden">
 		<div class="z-0 absolute inset-0 opacity-100 w-full h-full pointer-events-none">
 			<SplashCursor
 				SIM_RESOLUTION={128}
@@ -54,24 +54,45 @@ const websiteModalData = JSON.stringify(websitePreviewCards);
 				client:load
 			/>
 		</div>
-		<header class="flex justify-between items-center h-16">
+		<header class="flex justify-between items-center h-16 px-4 lg:px-0">
 			<a href="/">
-				<img src={nelfLogo.src} alt="Nelf Logo" class="w-30 h-15" />
+				<img src={nelfLogo.src} alt="Nelf Logo" class="w-24 h-auto" />
 			</a>
 
-			<nav class="space-x-4 text-white">
-				<a href="#craft" class="hover:text-nelf-pink">Our craft</a>
-				<a href="#vision" class="hover:text-nelf-pink">Looking forward</a>
-				<a href="#gallery" class="hover:text-nelf-pink">The gallery</a>
-				<!--<a href="#team" class="hover:text-nelf-pink">Meet the creators</a>-->
+			<!-- Desktop nav -->
+			<nav class="hidden md:flex space-x-4 text-white">
+				<a href="#craft" class="hover:text-nelf-pink transition-colors duration-200">Our craft</a>
+				<a href="#vision" class="hover:text-nelf-pink transition-colors duration-200">Looking forward</a>
+				<a href="#gallery" class="hover:text-nelf-pink transition-colors duration-200">The gallery</a>
 			</nav>
 
-			<nav class="text-white">
-				<button type="button" data-contact-open="talk" class="inline-flex hover:bg-white px-6 py-2.5 border border-white/70 rounded-md font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
+			<div class="flex items-center gap-3">
+				<button type="button" data-contact-open="talk" class="hidden md:inline-flex hover:bg-white px-6 py-2.5 border border-white/70 rounded-md font-medium text-white hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
 					Let's talk
 				</button>
-			</nav>
+				<!-- Hamburger button (mobile only) -->
+				<button id="mobile-menu-btn" type="button" class="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 text-white" aria-label="Open menu">
+					<span class="block w-6 h-0.5 bg-white transition-all duration-300" id="ham-top"></span>
+					<span class="block w-6 h-0.5 bg-white transition-all duration-300" id="ham-mid"></span>
+					<span class="block w-6 h-0.5 bg-white transition-all duration-300" id="ham-bot"></span>
+				</button>
+			</div>
 		</header>
+
+		<!-- Mobile menu overlay -->
+		<div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8">
+			<button id="mobile-menu-close" type="button" class="absolute top-6 right-6 text-white" aria-label="Close menu">
+				<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+			</button>
+			<nav class="flex flex-col items-center gap-8 text-white text-2xl">
+				<a href="#craft" class="hover:text-nelf-pink transition-colors" id="mobile-nav-craft">Our craft</a>
+				<a href="#vision" class="hover:text-nelf-pink transition-colors" id="mobile-nav-vision">Looking forward</a>
+				<a href="#gallery" class="hover:text-nelf-pink transition-colors" id="mobile-nav-gallery">The gallery</a>
+			</nav>
+			<button type="button" data-contact-open="talk" class="inline-flex bg-white px-8 py-3 rounded-full font-medium text-gray-900 text-lg">
+				Let's talk
+			</button>
+		</div>
 		<main class="z-10 relative flex flex-col w-full transition-opacity duration-750 lg:grow">
 			<section id="hero" class="relative flex justify-center items-center" style="height: calc(100vh - 7.1rem);">
 				<div class="z-0 absolute inset-0 opacity-100 w-full h-full pointer-events-none">
@@ -92,16 +113,16 @@ const websiteModalData = JSON.stringify(websitePreviewCards);
 						client:load
 					/>
 				</div>
-				<div class="z-10 relative flex flex-col items-center">
+				<div class="z-10 relative flex flex-col items-center px-4">
 					<div class="flex items-center space-x-3 bg-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-md px-4 py-2 border border-white/20 rounded-full w-fit">
 						<span onclick="window.location.href = '/admin/login';" class="inline-block bg-white hover:bg-nelf-pink shadow-[0_0_5px_rgba(255,255,255,0.8)] rounded-full w-1.5 h-1.5 cursor-pointer"></span>
 						<p class="font-light text-white/80 text-xs uppercase tracking-widest">Votre troisieme main</p>
 					</div>
 					<div class="mt-4"></div>
-					<h1 class="text-white text-8xl text-center">Build a personal brand <br/> That opens doors</h1>
-					<div class="mt-8"></div>
-					<p class="font-light text-[#555555] text-xl text-center">Create professional products that showcases your business brand, <br/> your vision, and helps you capture real growth</p>
-					<div class="space-x-4 mt-12">
+					<h1 class="text-white text-4xl sm:text-5xl md:text-6xl lg:text-8xl text-center leading-tight">Build a personal brand <br/> That opens doors</h1>
+					<div class="mt-6"></div>
+					<p class="font-light text-[#555555] text-base sm:text-lg md:text-xl text-center max-w-xl px-4">Create professional products that showcase your business brand, your vision, and helps you capture real growth</p>
+					<div class="flex flex-wrap justify-center gap-4 mt-10">
 						<button type="button" data-contact-open="talk" class="inline-flex bg-white px-6 py-2.5 border border-white/70 rounded-full font-medium hover:text-gray-900 transition-all hover:-translate-y-0.5 duration-300 transform">
 							Start Creating
 						</button>
@@ -124,42 +145,42 @@ const websiteModalData = JSON.stringify(websitePreviewCards);
 					/>-->
 				</div>
 			</section>
-			<section id="craft" class="flex justify-center items-center" style="height: calc(100vh - 4rem);">
-				<div class="flex flex-col justify-center items-center">
-					<h1 class="font-bold text-white text-6xl">Our craft</h1>
+			<section id="craft" class="flex justify-center items-center py-24 px-4">
+				<div class="flex flex-col justify-center items-center w-full max-w-6xl">
+					<h2 class="font-bold text-white text-4xl sm:text-5xl md:text-6xl text-center">Our craft</h2>
 					<div class="mt-4"></div>
-					<p class="font-light text-[#555555] text-xl text-center">Full-spectrum expertise, engineering your boldest visions into precise reality.</p>
+					<p class="font-light text-[#555555] text-base sm:text-xl text-center max-w-lg">Full-spectrum expertise, engineering your boldest visions into precise reality.</p>
 					<div class="mt-8"></div>
-					<div class="relative mx-auto mt-12 max-w-6xl">
+					<div class="relative w-full">
 						<div class="absolute inset-0 bg-linear-to-r from-pink-500/20 via-purple-500/20 to-blue-500/20 blur-3xl"></div>
-						<div class="relative gap-8 grid grid-cols-1 md:grid-cols-3">
+						<div class="relative gap-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
 							{[
-								{"id": "dev", "title": "Web & Mobile Development", "text": "Robust architectures and seamless interfaces. We engineer high-performance digital ecosystems from landing pages and e-commerce to complex web apps—built to scale", "icon": "code", "gradient": "from-cyan-400 to-blue-600", "position": "md:translate-y-4"},
-								{"id": "design", "title": "Design & Branding", "text": "Visual identities that leave a lasting impression. From the foundational logo to comprehensive brand guidelines, we forge the visual soul of your business.", "icon": "palette", "gradient": "from-pink-400 to-purple-600", "position": "md:translate-y-0"}, 
-								{"id": "motion", "title": "Motion & Content", "text": "Bring your message to life. We craft dynamic animations, promotional videos, and strategic content designed to capture instant attention and drive engagement.", "icon": "video", "gradient": "from-orange-400 to-red-600", "position": "md:translate-y-4"}
-							].map((service, index) => (
-								<div class={`group relative ${index % 2 === 0 ? 'translate-y-24' : '-translate-y-4'}`} data-service={service.id}>
-									<div class="absolute -inset-1 bg-linear-to-r {service.gradient} rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-									<div class="relative bg-black/40 backdrop-blur-xl p-8 border border-white/10 hover:border-white/20 rounded-lg w-full h-96 hover:scale-105 transition-all duration-300 cursor-pointer hover:transform service-card">
+								{"id": "dev", "title": "Web & Mobile Development", "text": "Robust architectures and seamless interfaces. We engineer high-performance digital ecosystems from landing pages and e-commerce to complex web apps—built to scale", "icon": "code", "gradient": "from-cyan-400 to-blue-600"},
+								{"id": "design", "title": "Design & Branding", "text": "Visual identities that leave a lasting impression. From the foundational logo to comprehensive brand guidelines, we forge the visual soul of your business.", "icon": "palette", "gradient": "from-pink-400 to-purple-600"}, 
+								{"id": "motion", "title": "Motion & Content", "text": "Bring your message to life. We craft dynamic animations, promotional videos, and strategic content designed to capture instant attention and drive engagement.", "icon": "video", "gradient": "from-orange-400 to-red-600"}
+							].map((service) => (
+								<div class="group relative sm:col-span-1" data-service={service.id}>
+									<div class="absolute -inset-1 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+									<div class="relative bg-black/40 backdrop-blur-xl p-6 sm:p-8 border border-white/10 hover:border-white/20 rounded-lg w-full hover:scale-105 transition-all duration-300 cursor-pointer service-card">
 										<div class="mb-4">
 											{service.icon === 'code' && (
-												<svg class="w-12 h-12 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="w-10 h-10 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
 												</svg>
 											)}
 											{service.icon === 'palette' && (
-												<svg class="w-12 h-12 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="w-10 h-10 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
 												</svg>
 											)}
 											{service.icon === 'video' && (
-												<svg class="w-12 h-12 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="w-10 h-10 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
 												</svg>
 											)}
 										</div>
-										<h3 class="text-2xl font-bold text-white mb-4 bg-linear-to-r {service.gradient} bg-clip-text text-transparent">{service.title}</h3>
-										<p class="text-gray-300 leading-relaxed">{service.text}</p>
+										<h3 class="text-xl sm:text-2xl font-bold text-white mb-3">{service.title}</h3>
+										<p class="text-gray-300 leading-relaxed text-sm sm:text-base">{service.text}</p>
 										<div class="flex items-center space-x-2 mt-6 text-white/60 group-hover:text-white transition-colors duration-300">
 											<span class="text-sm">Explore</span>
 											<svg class="w-4 h-4 transition-transform group-hover:translate-x-1 duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,26 +194,26 @@ const websiteModalData = JSON.stringify(websitePreviewCards);
 					</div>
 				</div>
 			</section>
-			<section id="vision" class="flex justify-center items-center" style="height: calc(100vh - 4rem);">
-				<div class="flex flex-col justify-center items-center">
-					<div class="flex justify-center items-center">
-						<p class="text-white text-4xl text-center">Innovating for a connected world that feels profoundly</p>
+			<section id="vision" class="flex justify-center items-center py-24 px-4">
+				<div class="flex flex-col justify-center items-center max-w-4xl text-center">
+					<p class="text-white text-2xl sm:text-3xl md:text-4xl text-center">Innovating for a connected world that feels profoundly</p>
+					<div class="mt-3 flex justify-center">
 						<RotatingText
 							client:load
 							texts={['human', 'authentic', 'effortless', 'yours']}
-							mainClassName="px-2 sm:px-2 md:px-3 bg-cyan-300 text-black text-4xl overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg mx-2"
+							mainClassName="px-3 sm:px-4 bg-cyan-300 text-black text-2xl sm:text-3xl md:text-4xl py-1 sm:py-2 justify-center rounded-lg"
 							staggerFrom={"last"}
 							initial={{ y: "100%" }}
 							animate={{ y: 0 }}
 							exit={{ y: "-120%" }}
 							staggerDuration={0.025}
-							splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
+							splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1"
 							transition={{ type: "spring", damping: 30, stiffness: 400 }}
 							rotationInterval={2000}
 						/>
 					</div>
 					<div class="mt-8"></div>
-					<p class="text-white text-xl text-center">At NELF, we believe the best technology fades into the background, letting the experience take center stage. <br/>  Our mission is to simplify digital interactions and create genuinely authentic value.</p>
+					<p class="text-white text-base sm:text-lg md:text-xl text-center max-w-2xl">At NELF, we believe the best technology fades into the background, letting the experience take center stage. Our mission is to simplify digital interactions and create genuinely authentic value.</p>
 				</div>
 			</section>
 			<section
@@ -855,7 +876,7 @@ const websiteModalData = JSON.stringify(websitePreviewCards);
 			</div>
 		</div>
 		<footer class="z-10 relative bg-black/80 backdrop-blur-xl border-white/10 border-t">
-			<div class="mx-auto px-8 py-16 max-w-7xl">
+			<div class="mx-auto px-4 sm:px-8 py-16 max-w-7xl">
 				<div class="gap-8 grid grid-cols-1 md:grid-cols-4">
 					<!-- Brand Section -->
 					<div class="col-span-1 md:col-span-2">
@@ -962,6 +983,28 @@ const websiteModalData = JSON.stringify(websitePreviewCards);
 <ServiceSidebar client:load />
 
 <script>
+	// Mobile menu toggle
+	const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+	const mobileMenuClose = document.getElementById('mobile-menu-close');
+	const mobileMenu = document.getElementById('mobile-menu');
+
+	function openMobileMenu() {
+		mobileMenu?.classList.remove('hidden');
+		document.body.style.overflow = 'hidden';
+	}
+	function closeMobileMenu() {
+		mobileMenu?.classList.add('hidden');
+		document.body.style.overflow = '';
+	}
+
+	mobileMenuBtn?.addEventListener('click', openMobileMenu);
+	mobileMenuClose?.addEventListener('click', closeMobileMenu);
+
+	// Close when any nav link is clicked
+	['mobile-nav-craft', 'mobile-nav-vision', 'mobile-nav-gallery'].forEach(id => {
+		document.getElementById(id)?.addEventListener('click', closeMobileMenu);
+	});
+
 	// Card click handlers
 	document.querySelectorAll('.service-card').forEach(card => {
 		card.addEventListener('click', (e) => {
