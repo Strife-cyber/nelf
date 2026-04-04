@@ -13,6 +13,7 @@ const astroLegacyEntrypoint = fileURLToPath(new URL('./node_modules/astro/dist/e
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://nelf.strife-cyber.org',
   output: 'server',
   adapter: node({
     mode: 'standalone',
